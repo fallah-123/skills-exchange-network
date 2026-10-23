@@ -1,0 +1,7 @@
+/* Search form and responsive developer-card grid. */
+.discover-page__search { display: grid; gap: 8px; max-width: 680px; margin: 20px 0 24px; }
+.discover-page__search label { font-weight: 650; }
+.discover-page__search > div { display: flex; gap: 8px; }
+.discover-page__search input { flex: 1; min-width: 0; min-height: 44px; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.discover-page__search button { min-height: 44px; padding: 8px 16px; border: 0; border-radius: var(--radius-sm); color: #fff; background: var(--color-primary); cursor: pointer; }
+.discover-page__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 16px; }

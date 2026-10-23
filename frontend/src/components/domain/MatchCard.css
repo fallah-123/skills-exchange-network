@@ -1,0 +1,13 @@
+/* Full match card and compact dashboard variant. */
+.match-card { display: grid; align-content: start; gap: 14px; }
+.match-card__heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.match-card__heading h2 { margin: 0; font-size: 1.2rem; }
+.match-card__heading a { color: var(--color-text); text-decoration: none; }
+.match-card__explanation { margin: 0; font-weight: 650; }
+.match-card__skills { display: grid; gap: 14px; }
+.match-card__skill-group h3 { margin: 0 0 8px; font-size: .95rem; }
+.match-card__skill-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.match-card__skill-group p { margin: 0; color: var(--color-text-muted); }
+.match-card__profile-link { font-weight: 650; }
+.match-card--compact { gap: 10px; padding: 18px; }
+.match-card--compact .match-card__skills { gap: 8px; }

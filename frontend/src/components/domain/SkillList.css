@@ -1,0 +1,11 @@
+/* Separates current assignments from searchable catalogue options. */
+.skill-list { min-width: 0; padding: 24px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.skill-list h2 { margin: 0; }
+.skill-list h3 { margin: 24px 0 10px; font-size: 1rem; }
+.skill-list > p { color: var(--color-text-muted); }
+.skill-list__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.skill-list__empty { color: var(--color-text-muted); }
+.skill-list__add { display: grid; gap: 10px; margin-top: 24px; }
+.skill-list__add h3 { margin: 0; }
+.skill-list__add label { font-weight: 650; }
+.skill-list__add input { min-height: 44px; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }

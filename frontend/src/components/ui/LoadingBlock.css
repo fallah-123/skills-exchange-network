@@ -1,0 +1,3 @@
+/* Centered full-page or section-level loading presentation. */
+.loading-block { min-height: 180px; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--color-text-muted); }
+.loading-block--full { min-height: 100vh; }

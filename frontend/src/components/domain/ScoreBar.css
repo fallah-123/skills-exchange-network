@@ -1,0 +1,5 @@
+/* Text-labelled match score visualization with an accessible progress value. */
+.score-bar { display: grid; gap: 6px; }
+.score-bar__label { font-size: .9rem; font-weight: 700; }
+.score-bar__track { height: 10px; overflow: hidden; border-radius: 999px; background: #e8ebf2; }
+.score-bar__fill { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); transition: width .2s ease; }

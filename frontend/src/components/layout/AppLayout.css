@@ -1,0 +1,2 @@
+/* Keeps route content inside the shared responsive page width. */
+#main-content { min-height: calc(100vh - 68px); }

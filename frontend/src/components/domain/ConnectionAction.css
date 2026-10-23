@@ -1,0 +1,4 @@
+/* Groups status and request actions consistently across profile and match views. */
+.connection-action { margin-top: 20px; }
+.connection-action > p { margin-top: 0; }
+.connection-action__buttons { display: flex; flex-wrap: wrap; gap: 10px; }

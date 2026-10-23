@@ -1,0 +1,10 @@
+/* Compact developer summary with a clamped bio and responsive skill tags. */
+.developer-card { display: flex; flex-direction: column; gap: 12px; }
+.developer-card__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.developer-card__heading h2 { margin: 0; font-size: 1.2rem; }
+.developer-card__heading a { color: var(--color-text); text-decoration: none; }
+.developer-card__bio { display: -webkit-box; min-height: 4.5em; margin: 0; overflow: hidden; color: var(--color-text-muted); -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.developer-card h3 { margin: 0; font-size: .95rem; }
+.developer-card__skills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.developer-card__muted, .developer-card__more { color: var(--color-text-muted); }
+.developer-card__link { margin-top: auto; font-weight: 650; }

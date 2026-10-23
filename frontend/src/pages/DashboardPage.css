@@ -1,0 +1,11 @@
+/* Independently populated dashboard section grid. */
+.dashboard-page__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; margin-top: 24px; }
+.dashboard-page__section > h2 { margin-top: 0; }
+.dashboard-page__profile-incomplete { padding: 14px; border-radius: var(--radius-sm); background: var(--color-warning-soft); }
+.dashboard-page__skill-groups { display: grid; gap: 16px; }
+.dashboard-page__skill-groups h3, .dashboard-page__activity h3 { margin: 0 0 8px; font-size: 1rem; }
+.dashboard-page__skill-groups > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dashboard-page__skill-groups > div h3 { flex-basis: 100%; }
+.dashboard-page__skill-groups p, .dashboard-page__activity p { margin: 4px 0; }
+.dashboard-page__matches { display: grid; gap: 12px; }
+.dashboard-page__activity { display: grid; gap: 16px; }

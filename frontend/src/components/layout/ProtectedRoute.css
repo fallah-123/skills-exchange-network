@@ -1,0 +1,2 @@
+/* Full-screen session gate while the server identity is being restored. */
+.protected-route__loading { min-height: 100vh; display: grid; place-items: center; }

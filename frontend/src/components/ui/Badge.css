@@ -1,0 +1,8 @@
+/* Text-first badges with contrast and distinct status color pairs. */
+.badge { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 8px; border-radius: 999px; font-size: .875rem; font-weight: 650; }
+.badge--neutral { color: var(--color-text-muted); background: #edf0f4; }
+.badge--pending { color: #724400; background: var(--color-warning-soft); }
+.badge--accepted { color: #145b34; background: var(--color-success-soft); }
+.badge--rejected { color: #812020; background: var(--color-danger-soft); }
+.badge--offered { color: var(--color-offered); background: var(--color-offered-soft); }
+.badge--wanted { color: var(--color-wanted); background: var(--color-wanted-soft); }

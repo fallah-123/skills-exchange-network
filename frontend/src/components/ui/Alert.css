@@ -1,0 +1,4 @@
+/* Form-level success and error message appearance. */
+.alert { padding: 12px 14px; border-radius: var(--radius-sm); }
+.alert--error { color: #812020; background: var(--color-danger-soft); }
+.alert--success { color: #145b34; background: var(--color-success-soft); }

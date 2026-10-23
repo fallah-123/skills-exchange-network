@@ -1,0 +1,23 @@
+/* Shared button variants with comfortable touch targets. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 650;
+  text-decoration: none;
+  transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+.button:disabled { cursor: not-allowed; opacity: .6; }
+.button--primary { color: #fff; background: var(--color-primary); box-shadow: 0 3px 8px rgba(59, 91, 219, .18); }
+.button--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.button--secondary { color: var(--color-text); border-color: var(--color-border); background: var(--color-surface); }
+.button--danger { color: #fff; background: var(--color-danger); }
+
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
+}

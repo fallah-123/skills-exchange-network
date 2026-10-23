@@ -1,0 +1,7 @@
+/* Shared single-column account form styling and accessible input appearance. */
+.auth-page { display: grid; place-items: start center; }
+.auth-page__panel { width: min(100%, 520px); display: grid; gap: 16px; padding: clamp(20px, 5vw, 36px); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.auth-page__panel h1, .auth-page__panel p { margin: 0; }
+.auth-page__panel form { display: grid; gap: 18px; }
+.auth-page input, .form-field input, .form-field select { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); background: var(--color-surface); }
+.auth-page__footer { color: var(--color-text-muted); }

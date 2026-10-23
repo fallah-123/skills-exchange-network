@@ -1,0 +1,5 @@
+/* Label, hint, and validation-message layout for form controls. */
+.form-field { display: grid; gap: 6px; }
+.form-field__label { font-weight: 650; }
+.form-field__hint { color: var(--color-text-muted); }
+.form-field__error { color: var(--color-danger); }

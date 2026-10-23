@@ -1,0 +1,30 @@
+{
+  "name": "skills-developers-network-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "dev:test": "node --watch scripts/start-test-server.js",
+    "check:db": "node scripts/check-db.js",
+    "db:test:setup": "node scripts/setup-test-db.js",
+    "db:test:seed-skills": "node scripts/seed-test-skills.js",
+    "test": "node --import ./tests/setup/loadTestEnv.js --test --test-concurrency=1",
+    "test:unit": "node --test tests/unit/*.test.js"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}

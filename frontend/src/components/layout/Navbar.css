@@ -1,0 +1,24 @@
+/* Responsive header and navigation, collapsing to a keyboard-operable menu. */
+.app-header { position: relative; border-bottom: 1px solid var(--color-border); background: rgba(255, 255, 255, .92); box-shadow: 0 3px 14px rgba(32, 47, 86, .04); }
+.app-header::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: linear-gradient(90deg, var(--color-primary), #7c6ce7 55%, #28a69a); content: ""; opacity: .75; }
+.app-header__inner { width: min(calc(100% - 32px), var(--content-max)); min-height: 68px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.app-header__brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-text); font-weight: 750; letter-spacing: -.02em; text-decoration: none; }
+.app-header__mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px; color: #fff; background: linear-gradient(140deg, var(--color-primary), #7763df); box-shadow: 0 4px 10px rgba(59, 91, 219, .22); }
+.app-header__nav { display: flex; align-items: center; gap: 20px; }
+.app-header__links, .app-header__user { display: flex; align-items: center; gap: 14px; }
+.app-header__links a { color: var(--color-text-muted); text-decoration: none; }
+.app-header__links a.active { color: var(--color-primary); font-weight: 700; }
+.app-header__links a { transition: color .16s ease; }
+.app-header__links a:hover { color: var(--color-primary); }
+.app-header__user { padding-left: 16px; border-left: 1px solid var(--color-border); }
+.app-header__user span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-header__toggle { display: none; }
+@media (max-width: 999px) {
+  .app-header__inner { min-height: 60px; flex-wrap: wrap; padding: 10px 0; }
+  .app-header__toggle { display: inline-flex; }
+  .app-header__nav { display: none; width: 100%; align-items: stretch; flex-direction: column; gap: 14px; padding: 4px 0 12px; }
+  .app-header__nav--open { display: flex; }
+  .app-header__links { align-items: stretch; flex-direction: column; gap: 4px; }
+  .app-header__links a { min-height: 40px; display: flex; align-items: center; }
+  .app-header__user { justify-content: space-between; padding: 12px 0 0; border-top: 1px solid var(--color-border); border-left: 0; }
+}

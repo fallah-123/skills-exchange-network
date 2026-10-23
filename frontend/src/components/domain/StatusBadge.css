@@ -1,0 +1,2 @@
+/* Keeps request status labels vertically aligned in cards and lists. */
+.status-badge { display: inline-flex; align-items: center; }

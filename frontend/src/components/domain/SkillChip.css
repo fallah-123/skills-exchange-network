@@ -1,0 +1,7 @@
+/* Skill chips use category colors plus visible labels so color is never the only cue. */
+.skill-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 8px 4px 12px; border-radius: 999px; font-size: .925rem; overflow-wrap: anywhere; }
+.skill-chip--offered { color: var(--color-offered); background: var(--color-offered-soft); }
+.skill-chip--wanted { color: var(--color-wanted); background: var(--color-wanted-soft); }
+.skill-chip--remove { color: var(--color-text); background: #edf0f4; }
+.skill-chip--offered button, .skill-chip--wanted button, .skill-chip--remove button { min-height: 28px; border: 0; border-radius: 999px; padding: 2px 8px; color: inherit; background: rgba(255,255,255,.7); cursor: pointer; }
+.skill-chip button:disabled { cursor: wait; opacity: .55; }

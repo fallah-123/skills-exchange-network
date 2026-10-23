@@ -1,0 +1,11 @@
+/* Readable profile details and independently labelled skill groups. */
+.developer-profile { display: grid; gap: 20px; }
+.developer-profile__title { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.developer-profile__title h1 { margin: 0; }
+.developer-profile__details h2, .developer-profile__skills h2, .developer-profile__connection h2 { margin-top: 0; font-size: 1.15rem; }
+.developer-profile__details p:last-child { margin-bottom: 0; }
+.developer-profile__skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+.developer-profile__skills section { padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.developer-profile__skills section > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.developer-profile__skills section > p { color: var(--color-text-muted); }
+.developer-profile__connection { padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }

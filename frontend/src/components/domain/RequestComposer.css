@@ -1,0 +1,4 @@
+/* Inline request form and action alignment. */
+.request-composer { display: grid; gap: 12px; max-width: 620px; margin-top: 16px; }
+.request-composer__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.request-composer__error { margin: 0; color: var(--color-danger); }
