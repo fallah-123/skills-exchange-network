@@ -1,5 +1,9 @@
 {
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://skills-exchange-network.onrender.com/api/$1"
+    },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

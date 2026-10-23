@@ -34,10 +34,9 @@ export function setUnauthenticatedHandler(handler) {
  * @returns {Promise<{data?: *, message?: string, meta?: object}>} Parsed response.
  */
 export async function request(method, path, { body, query, signal } = {}) {
-  // 1. Read the live backend Render URL from Vercel's injected environment settings
+  // An empty base uses same-origin requests, proxied by Vite locally and Vercel in production.
   const apiBaseUrl = import.meta.env.VITE_API_URL || '';
 
-  // 2. Parse path and query strings safely
   const url = new URL(path, 'http://localhost');
   for (const [key, value] of Object.entries(query || {})) {
     if (value !== undefined && value !== null && value !== '')
@@ -46,12 +45,10 @@ export async function request(method, path, { body, query, signal } = {}) {
 
   let response;
   try {
-    // 3. Assemble the complete cross-origin destination path (e.g., https://onrender.com)
     const targetUrl = `${apiBaseUrl}${url.pathname}${url.search}`;
 
     response = await fetch(targetUrl, {
       method,
-      // Swapped from 'same-origin' to 'include' to allow cookies and auth tokens to move between Vercel & Render safely
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),

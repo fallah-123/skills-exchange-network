@@ -16,6 +16,8 @@ npm.cmd run dev
 
 The app is served at <http://localhost:5173>. Vite proxies API calls to `http://localhost:4000` by default. If the backend runs elsewhere, copy `.env.example` to `.env.local` and set `API_PROXY_TARGET` to the backend origin, then restart Vite. This value is read by the Vite configuration and is not exposed to browser JavaScript.
 
+In production, Vercel forwards `/api/*` requests to the Render backend using `vercel.json`. Leave `VITE_API_URL` unset or empty in Vercel so browser requests stay on the frontend's origin and the session cookie works as a first-party cookie.
+
 ## Scripts
 
 | Script | Purpose |
