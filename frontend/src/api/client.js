@@ -1,9 +1,15 @@
 // Provides the shared fetch client and normalized API errors for the frontend.
-const NETWORK_ERROR_MESSAGE = 'Cannot reach the server. Check your connection and try again.';
+const NETWORK_ERROR_MESSAGE =
+  'Cannot reach the server. Check your connection and try again.';
 let unauthenticatedHandler = () => {};
 
 export class ApiError extends Error {
-  constructor({ status = 0, code = 'UNKNOWN_ERROR', message = 'Something went wrong.', details = {} }) {
+  constructor({
+    status = 0,
+    code = 'UNKNOWN_ERROR',
+    message = 'Something went wrong.',
+    details = {},
+  }) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -28,22 +34,35 @@ export function setUnauthenticatedHandler(handler) {
  * @returns {Promise<{data?: *, message?: string, meta?: object}>} Parsed response.
  */
 export async function request(method, path, { body, query, signal } = {}) {
+  // 1. Read the live backend Render URL from Vercel's injected environment settings
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+
+  // 2. Parse path and query strings safely
   const url = new URL(path, 'http://localhost');
   for (const [key, value] of Object.entries(query || {})) {
-    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+    if (value !== undefined && value !== null && value !== '')
+      url.searchParams.set(key, String(value));
   }
+
   let response;
   try {
-    response = await fetch(`${url.pathname}${url.search}`, {
+    // 3. Assemble the complete cross-origin destination path (e.g., https://onrender.com)
+    const targetUrl = `${apiBaseUrl}${url.pathname}${url.search}`;
+
+    response = await fetch(targetUrl, {
       method,
-      credentials: 'same-origin',
+      // Swapped from 'same-origin' to 'include' to allow cookies and auth tokens to move between Vercel & Render safely
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      ...(signal ? { signal } : {})
+      ...(signal ? { signal } : {}),
     });
   } catch (error) {
     if (error?.name === 'AbortError') throw error;
-    throw new ApiError({ code: 'NETWORK_ERROR', message: NETWORK_ERROR_MESSAGE });
+    throw new ApiError({
+      code: 'NETWORK_ERROR',
+      message: NETWORK_ERROR_MESSAGE,
+    });
   }
 
   let payload;
@@ -57,16 +76,25 @@ export async function request(method, path, { body, query, signal } = {}) {
     const error = new ApiError({
       status: response.status,
       code: apiError?.code || 'INVALID_RESPONSE',
-      message: apiError?.message || 'The server returned an unexpected response.',
-      details: apiError?.details || {}
+      message:
+        apiError?.message || 'The server returned an unexpected response.',
+      details: apiError?.details || {},
     });
-    if (response.status === 401 && error.code === 'UNAUTHENTICATED' && path !== '/api/auth/me') {
+    if (
+      response.status === 401 &&
+      error.code === 'UNAUTHENTICATED' &&
+      path !== '/api/auth/me'
+    ) {
       unauthenticatedHandler(error);
     }
     throw error;
   }
   if (!payload || typeof payload !== 'object') {
-    throw new ApiError({ status: response.status, code: 'INVALID_RESPONSE', message: 'The server returned an unexpected response.' });
+    throw new ApiError({
+      status: response.status,
+      code: 'INVALID_RESPONSE',
+      message: 'The server returned an unexpected response.',
+    });
   }
   return { data: payload.data, message: payload.message, meta: payload.meta };
 }
