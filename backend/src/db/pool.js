@@ -10,7 +10,8 @@ const pool = new Pool({
   port: env.database.port,
   database: env.database.name,
   user: env.database.user,
-  password: env.database.password
+  password: env.database.password,
+  ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: true } : false,
 });
 
 export default pool;
