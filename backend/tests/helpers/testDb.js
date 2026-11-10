@@ -20,6 +20,6 @@ export const testPool = new Pool({
 /** Removes all app rows and resets identities only in the validated test database. */
 export async function resetTestDatabase() {
   await testPool.query(
-    'TRUNCATE users, developer_profiles, skills, developer_skills, collaboration_requests, user_sessions RESTART IDENTITY CASCADE'
+    'TRUNCATE messages, conversations, users, developer_profiles, skills, developer_skills, collaboration_requests, user_sessions RESTART IDENTITY CASCADE'
   );
 }

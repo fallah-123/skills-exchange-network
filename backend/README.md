@@ -55,7 +55,9 @@ When `NODE_ENV=test`, the pool uses `DB_NAME_TEST`. Configuration validation fai
 |---|---|
 | `npm start` | Start the backend |
 | `npm run dev` | Start with Node's built-in watch mode |
-| `npm run check:db` | Read-only validation of expected tables and triggers in `DB_NAME` |
+| `npm run check:db` | Read-only validation of schema, messaging indexes, RLS and restricted client privileges in the configured database |
+| `npm run db:migrate:messaging` | Read-only migration 003 preflight; explicit `--apply` and matching target arguments are required to migrate |
+| `npm run check:migration` | Rehearse migration 003 in a disposable database on isolated local PostgreSQL; requires `NODE_ENV=test` |
 | `npm run db:test:setup` | Create or recreate the safety-checked `_test` database and apply local migrations |
 | `npm run db:test:seed-skills` | Idempotently seed the synthetic skill catalogue in `DB_NAME_TEST` only |
 | `npm run dev:test` | Start the API against `DB_NAME_TEST` on port `4001` for frontend integration checks |
@@ -78,9 +80,9 @@ Both test-only commands refuse to run against `DB_NAME`, require a valid `DB_NAM
 
 ```text
 backend/
-  db/migrations/       Owner schema copies used only for test setup
+  db/migrations/       Schema copies for tests; migration 003 for messaging rollout
   docs/API.md          Implemented HTTP contract and examples
-  scripts/             Read-only schema check and guarded test DB setup
+  scripts/             Schema checks, guarded messaging migration and test DB setup
   src/
     config/            Validated environment config
     controllers/       HTTP request and response handling
@@ -104,8 +106,21 @@ This is a skill-coverage percentage, not a probability. A mutual match (both dir
 
 ## Known limitations
 
+Private messaging storage, backend endpoints, and the messaging UI are implemented.
+Final testing and release preparation are documented in [messaging release](docs/MESSAGING_RELEASE.md).
+Hosted database connections use verified TLS; the official public Supabase CA is
+included automatically for Supabase hosts. `DB_SSL_CA_FILE` is an optional override.
+Production sessions use Secure, HttpOnly, SameSite=Lax host-only cookies through
+Vercel's same-origin proxy. Existing session cookies upgrade on HTTPS requests
+without forcing logout. Plain HTTP production API requests are rejected except
+for read-only health probes; local HTTP development remains supported.
+The frontend polls for replies and inbox updates; deployment remains pending. See [messaging API](docs/MESSAGING_API.md) for client
+integration and [messaging storage](docs/MESSAGING_STORAGE.md) for migration 003,
+privacy rules, and test setup. Migration 003 must be applied before using these
+endpoints; it has not been applied to the application database yet.
+
 - Skill matching is exact skill-id only.
 - Sessions require the owner-created `user_sessions` table.
 - There is no email verification or password reset.
-- There is no rate limiting.
+- Login and registration have no rate limiting; private message sends are limited.
 - Accepted requests do not exchange contact details.

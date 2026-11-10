@@ -11,6 +11,8 @@
     "dev": "node --watch src/server.js",
     "dev:test": "node --watch scripts/start-test-server.js",
     "check:db": "node scripts/check-db.js",
+    "db:migrate:messaging": "node scripts/migrate-messaging.js",
+    "check:migration": "node scripts/check-messaging-migration.js",
     "db:test:setup": "node scripts/setup-test-db.js",
     "db:test:seed-skills": "node scripts/seed-test-skills.js",
     "test": "node --import ./tests/setup/loadTestEnv.js --test --test-concurrency=1",

@@ -62,7 +62,8 @@ const env = Object.freeze({
     maintenanceName: process.env.DB_NAME,
     testName: process.env.DB_NAME_TEST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD
+    password: process.env.DB_PASSWORD,
+    caFile: process.env.DB_SSL_CA_FILE || undefined
   }),
   sessionSecret: process.env.SESSION_SECRET
 });

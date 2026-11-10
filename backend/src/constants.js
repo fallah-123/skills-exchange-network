@@ -32,3 +32,10 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const MAX_PAGE_SIZE = 50;
 export const DEFAULT_MATCH_LIMIT = 20;
 export const MAX_MATCH_LIMIT = 50;
+/** Private messaging limits are independent of collaboration request messages. */
+export const CHAT_MESSAGE_MAX = 2000;
+export const CHAT_PAGE_SIZE = 30;
+export const CHAT_MAX_PAGE_SIZE = 100;
+export const CONVERSATION_PAGE_SIZE = 20;
+export const CHAT_SEND_LIMIT = 30;
+export const CHAT_SEND_WINDOW_MS = 60_000;

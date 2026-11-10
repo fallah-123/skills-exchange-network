@@ -20,6 +20,9 @@ export default function errorHandler(error, req, res, next) {
   if (malformedJson) {
     error = new AppError(400, 'VALIDATION_ERROR', 'Please correct the highlighted fields.');
   }
+  if (error.type === 'entity.too.large') {
+    error = new AppError(413, 'PAYLOAD_TOO_LARGE', 'The request body is too large.');
+  }
 
   error = mapDatabaseError(error);
   if (!(error instanceof AppError)) {
@@ -35,6 +38,9 @@ export default function errorHandler(error, req, res, next) {
   };
   if (error.code === 'VALIDATION_ERROR' && error.details) {
     payload.error.details = error.details;
+  }
+  if ([429, 503].includes(error.status) && Number.isInteger(error.retryAfter) && error.retryAfter > 0) {
+    res.set('Retry-After', String(error.retryAfter));
   }
   res.status(error.status).json(payload);
 }

@@ -42,11 +42,7 @@ export async function login(req, res) {
  */
 export async function logout(req, res) {
   await new Promise((resolve, reject) => req.session.destroy((sessionError) => sessionError ? reject(sessionError) : resolve()));
-  res.clearCookie(SESSION_COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: req.app.get('env') === 'production'
-  });
+  res.clearCookie(SESSION_COOKIE_NAME, req.app.locals.sessionCookieOptions);
   res.status(200).json({ message: 'Logged out.' });
 }
 

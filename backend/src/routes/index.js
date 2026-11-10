@@ -9,6 +9,7 @@ import skillsRouter from './skills.routes.js';
 import developersRouter from './developers.routes.js';
 import matchesRouter from './matches.routes.js';
 import requestsRouter from './requests.routes.js';
+import messagingRouter from './messaging.routes.js';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/skills', skillsRouter);
 router.use('/developers', developersRouter);
 router.use('/matches', matchesRouter);
 router.use('/requests', requestsRouter);
+router.use('/conversations', messagingRouter);
 
 export default router;

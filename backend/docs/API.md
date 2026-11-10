@@ -285,9 +285,57 @@ All routes are under `/api`. Unless marked public, a route requires the `sdn.sid
 - **Success:** `200`, updated request data as shown for request creation, with `"status": "rejected"` and `"message": "Request rejected."`
 - **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 REQUEST_NOT_FOUND`, `409 INVALID_STATE`
 
+## Private messaging
+
+Requires migration `003_private_messaging.sql`. All endpoints require a session;
+all responses from the conversations router set `Cache-Control: no-store`.
+Only the two participants in an accepted request can use its conversation.
+Nonparticipants receive the same `404` response as an unknown identifier.
+
+See [messaging API usage](MESSAGING_API.md) for pagination, retry, and polling rules.
+
+| Method and path | Input | Success |
+|---|---|---|
+| `GET /api/conversations/csrf-token` | None | `200 { data: { csrfToken, userId } }` |
+| `POST /api/conversations` | `{ requestId }`, JSON and CSRF header | `201 { data: Conversation }` when created; `200` when already present |
+| `GET /api/conversations` | `page` (default 1, max 10,000), `limit` (default 20, max 50) | `200 { data: Conversation[], meta: { page, limit, hasMore } }` |
+| `GET /api/conversations/:id` | Positive integer conversation ID | `200 { data: Conversation }` |
+| `GET /api/conversations/:id/messages` | Optional `before` or `after` message ID string; `limit` default 30, max 100 | `200 { data: Message[], meta: { limit, hasMore, nextBefore, nextAfter } }` |
+| `POST /api/conversations/:id/messages` | `{ body, clientMessageId }`, JSON and CSRF header | `201 { data: Message, meta: { replayed: false } }`; identical retry returns `200` and `replayed: true` |
+
+`Conversation` is `{ id, requestId, counterpart: { id, displayName }, createdAt, lastMessage }`.
+`lastMessage` is a `Message` or `null`. Conversations are ordered by latest activity,
+then conversation ID descending. Only opened conversations appear in the inbox.
+
+`Message` is `{ id, conversationId, senderId, clientMessageId, body, createdAt }`.
+Message IDs are decimal **strings**, including in cursors; conversation/request/user
+IDs are JSON integers. Timestamps are ISO strings. The sender always comes from
+the server session. Unknown body fields (such as `senderId` or `createdAt`) are
+rejected. Text is trimmed, must contain 1–2,000 Unicode code points, and cannot
+contain NUL or unpaired surrogates. The UUID is required and normalized to lowercase.
+
+Both POST endpoints require `Content-Type: application/json` and `X-CSRF-Token`
+from the authenticated token endpoint. Tokens belong to one login session and
+change when login regenerates that session. This protection is scoped to messaging;
+it does not change the existing auth/profile/skills/request API contracts.
+
+Messaging errors:
+
+- `400 VALIDATION_ERROR`: invalid fields, IDs, pagination, Unicode, or cursor combinations
+- `401 UNAUTHENTICATED`: missing, logged-out, or expired session
+- `403 CSRF_INVALID`: absent, invalid, or other-session CSRF token
+- `404 CONNECTION_NOT_FOUND` / `CONVERSATION_NOT_FOUND`: missing or inaccessible resource
+- `409 CONNECTION_NOT_ACCEPTED`: the caller's collaboration request is pending or rejected
+- `409 MESSAGE_ID_REUSED`: this sender reused the UUID in this conversation with different text
+- `413 PAYLOAD_TOO_LARGE`: the JSON request exceeds the existing 10 KB body limit
+- `415 UNSUPPORTED_MEDIA_TYPE`: a messaging POST is not JSON
+- `429 MESSAGE_RATE_LIMITED`: 30 new messages per sender in the preceding 60 seconds; includes `Retry-After` seconds
+- `503 MESSAGING_BUSY`: lock timeout, statement timeout, or deadlock; includes `Retry-After: 1`
+
 ## Common errors
 
 - `400 VALIDATION_ERROR`: malformed JSON, invalid body, path id, or query
 - `401 UNAUTHENTICATED`: missing or invalid session
 - `404 NOT_FOUND`: unknown route
+- `413 PAYLOAD_TOO_LARGE`: request body exceeds the configured JSON limit
 - `500 INTERNAL_ERROR`: unexpected server failure; internal details are not included in the response
