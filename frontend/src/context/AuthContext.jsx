@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, loginUser, logoutUser } from '../api/auth.api.js';
 import { setUnauthenticatedHandler } from '../api/client.js';
+import { resetMessagingSession } from '../api/messaging.api.js';
 import { useToast } from './ToastContext.jsx';
 
 const AuthContext = createContext(null);
@@ -27,6 +28,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setUnauthenticatedHandler((error) => {
+      resetMessagingSession();
       setUser(null);
       showToast({ type: 'error', message: 'Please log in to continue.' });
       navigate('/login', { replace: true, state: { sessionExpired: true } });
@@ -36,11 +38,13 @@ export function AuthProvider({ children }) {
   }, [navigate, showToast]);
 
   const login = useCallback(async (credentials) => {
+    resetMessagingSession();
     const result = await loginUser(credentials);
     setUser(result.data);
     return result;
   }, []);
   const logout = useCallback(async () => {
+    resetMessagingSession();
     const result = await logoutUser();
     setUser(null);
     return result;

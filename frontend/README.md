@@ -26,6 +26,8 @@ In production, Vercel forwards `/api/*` requests to the Render backend using `ve
 | `npm run build` | Create the production frontend in `dist/` |
 | `npm run preview` | Preview the production build |
 | `npm run check:integration` | Exercise the real API modules through Vite against the guarded test database |
+| `npm run check:messaging` | Check automatic messaging through the local proxy using two synthetic sessions, without resetting tables |
+| `npm test` | Check messaging API integration logic, retry safety, and Unicode validation with mocked HTTP responses |
 
 ## Folder map
 
@@ -58,6 +60,7 @@ All authenticated routes first restore the server session using `GET /api/auth/m
 | `/developers/:id` | Developer Profile | `GET /api/developers/:id`, `POST /api/requests`, `POST /api/requests/:id/accept`, `POST /api/requests/:id/reject` |
 | `/matches` | Recommended Developers | `GET /api/matches`, and request actions when needed |
 | `/requests` | Collaboration Requests | `GET /api/requests/incoming` or `/outgoing`, accept/reject `POST` actions |
+| `/messages`, `/messages/:id` | Private messaging | Conversation list/detail/history reads and session-protected messaging POSTs |
 | `*` | Not found | None |
 
 The backend mounts skill assignment operations at `/api/skills/me/:skillType` (with `offered` or `wanted` as the type), so the frontend uses those parameterized paths.
@@ -99,8 +102,10 @@ The script refuses to run unless `INTEGRATION_TARGET_IS_TEST_DB=yes` is set. Bef
 ## Known limitations
 
 - Matching uses exact skill-id overlap only.
-- Accepted requests do not exchange contact details; messaging is outside this app's scope.
+- Accepted connections support private text messaging, including emoji. Replies update by polling while the messaging page is visible and online; there are no typing indicators or read receipts.
 - Production must serve the frontend and `/api` from the same origin for session-cookie authentication.
 - There is no email verification, password reset, or account-management flow.
 
 For a real-account browser workflow, use the unticked checklist in [docs/MANUAL_TEST.md](./docs/MANUAL_TEST.md).
+
+For messaging controls and verification status, see [docs/MESSAGING_UI.md](./docs/MESSAGING_UI.md).

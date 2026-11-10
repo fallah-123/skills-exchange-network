@@ -16,7 +16,11 @@ if (process.env.INTEGRATION_TARGET_IS_TEST_DB !== 'yes') {
   process.exit(1);
 }
 
-const proxyOrigin = 'http://localhost:5173';
+const origin = new URL(process.env.INTEGRATION_ORIGIN || 'http://localhost:5173');
+if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(origin.hostname) || origin.username || origin.password) {
+  throw new Error('This check only accepts a local HTTP test origin.');
+}
+const proxyOrigin = origin.origin;
 const nativeFetch = globalThis.fetch.bind(globalThis);
 const cookieJars = new Map([['anonymous', '']]);
 let activeJar = 'anonymous';

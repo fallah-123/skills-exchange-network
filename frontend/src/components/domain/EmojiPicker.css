@@ -1,0 +1,8 @@
+.emoji-picker { position: relative; flex-shrink: 0; }
+.emoji-picker__toggle { min-height: 34px; padding: 5px 10px; gap: 6px; font-size: 12px; }
+.emoji-picker__toggle > span { font-size: 17px; }
+.emoji-picker__panel { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 8px); width: min(280px, calc(100vw - 64px)); padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 8px 28px rgba(32, 47, 86, .16); }
+.emoji-picker__title { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 650; color: var(--color-text-muted); }
+.emoji-picker__choices { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
+.emoji-picker__choice { display: grid; place-items: center; min-width: 0; min-height: 40px; padding: 4px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; font-size: 23px; font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+.emoji-picker__choice:hover, .emoji-picker__choice:focus-visible { background: var(--color-primary-soft); }

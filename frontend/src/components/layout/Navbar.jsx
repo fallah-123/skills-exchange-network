@@ -11,6 +11,7 @@ const links = [
   ['/developers', 'Discover'],
   ['/matches', 'Matches'],
   ['/requests', 'Requests'],
+  ['/messages', 'Messages'],
   ['/skills', 'My Skills'],
   ['/profile', 'Profile']
 ];

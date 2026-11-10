@@ -6,6 +6,7 @@ import Button from '../ui/Button.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { REQUEST_STATUS } from '../../constants.js';
 import RequestComposer from './RequestComposer.jsx';
+import MessageButton from './MessageButton.jsx';
 import './ConnectionAction.css';
 
 /** Renders the permitted action for a developer connection state. */
@@ -26,7 +27,7 @@ export default function ConnectionAction({ developerId, connection, onChanged })
       setWorking(false);
     }
   }
-  if (connection?.status === REQUEST_STATUS.ACCEPTED) return <div className="connection-action"><Badge variant="accepted">Connected</Badge></div>;
+  if (connection?.status === REQUEST_STATUS.ACCEPTED) return <div className="connection-action"><Badge variant="accepted">Connected</Badge><MessageButton requestId={connection.requestId} /></div>;
   if (connection?.status === REQUEST_STATUS.PENDING && connection.direction === 'outgoing') return <div className="connection-action"><Badge variant="pending">Request pending</Badge></div>;
   if (connection?.status === REQUEST_STATUS.PENDING && connection.direction === 'incoming') {
     return (

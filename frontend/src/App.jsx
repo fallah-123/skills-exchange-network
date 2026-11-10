@@ -17,6 +17,7 @@ import MatchesPage from './pages/MatchesPage.jsx';
 import RequestsPage from './pages/RequestsPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+import MessagesPage from './pages/MessagesPage.jsx';
 
 const pages = [
   { path: '/', title: 'Skills Exchange Network', element: <LandingPage /> },
@@ -28,6 +29,8 @@ const pages = [
   { path: '/developers', title: 'Discover Developers', element: <DiscoverPage /> },
   { path: '/developers/:id', title: 'Developer Profile', element: <DeveloperProfilePage /> },
   { path: '/matches', title: 'Recommended Developers', element: <MatchesPage /> },
+  { path: '/messages', title: 'Messages', element: <MessagesPage /> },
+  { path: '/messages/:id', title: 'Messages', element: <MessagesPage /> },
   { path: '/requests', title: 'Collaboration Requests', element: <RequestsPage /> }
 ];
 

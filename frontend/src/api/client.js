@@ -9,12 +9,14 @@ export class ApiError extends Error {
     code = 'UNKNOWN_ERROR',
     message = 'Something went wrong.',
     details = {},
+    retryAfter = 0,
   }) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -33,9 +35,9 @@ export function setUnauthenticatedHandler(handler) {
  * @param {{body?: object, query?: object, signal?: AbortSignal}} options Request options.
  * @returns {Promise<{data?: *, message?: string, meta?: object}>} Parsed response.
  */
-export async function request(method, path, { body, query, signal } = {}) {
+export async function request(method, path, { body, query, signal, headers } = {}) {
   // An empty base uses same-origin requests, proxied by Vite locally and Vercel in production.
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  const apiBaseUrl = import.meta.env?.VITE_API_URL || '';
 
   const url = new URL(path, 'http://localhost');
   for (const [key, value] of Object.entries(query || {})) {
@@ -50,7 +52,7 @@ export async function request(method, path, { body, query, signal } = {}) {
     response = await fetch(targetUrl, {
       method,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...headers },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       ...(signal ? { signal } : {}),
     });
@@ -65,7 +67,8 @@ export async function request(method, path, { body, query, signal } = {}) {
   let payload;
   try {
     payload = await response.json();
-  } catch {
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
     payload = null;
   }
   if (!response.ok) {
@@ -76,6 +79,7 @@ export async function request(method, path, { body, query, signal } = {}) {
       message:
         apiError?.message || 'The server returned an unexpected response.',
       details: apiError?.details || {},
+      retryAfter: Math.max(0, Number(response.headers.get('Retry-After')) || 0),
     });
     if (
       response.status === 401 &&

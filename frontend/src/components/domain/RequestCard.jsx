@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import Button from '../ui/Button.jsx';
 import Card from '../ui/Card.jsx';
 import StatusBadge from './StatusBadge.jsx';
+import MessageButton from './MessageButton.jsx';
 import { formatDate } from '../../utils/format.js';
 import { REQUEST_STATUS } from '../../constants.js';
 import './RequestCard.css';
@@ -20,6 +21,7 @@ export default function RequestCard({ request, direction, busy, onRespond }) {
       </div>
       <p className="request-card__message">{request.message || 'No message'}</p>
       <p className="request-card__date">{direction === 'incoming' ? 'Received' : 'Sent'} {formatDate(request.createdAt)}</p>
+      {request.status === REQUEST_STATUS.ACCEPTED && <MessageButton requestId={request.id} />}
       {direction === 'outgoing' && request.status === REQUEST_STATUS.REJECTED ? <p className="request-card__hint">You can send a new request from their profile.</p> : null}
       {isIncomingPending ? (
         confirmReject ? (

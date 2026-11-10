@@ -10,7 +10,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "check:integration": "node scripts/integration-check.mjs"
+    "check:integration": "node scripts/integration-check.mjs",
+    "check:messaging": "node scripts/messaging-polling-check.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",
