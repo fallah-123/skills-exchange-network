@@ -114,10 +114,12 @@ Production sessions use Secure, HttpOnly, SameSite=Lax host-only cookies through
 Vercel's same-origin proxy. Existing session cookies upgrade on HTTPS requests
 without forcing logout. Plain HTTP production API requests are rejected except
 for read-only health probes; local HTTP development remains supported.
-The frontend polls for replies and inbox updates; deployment remains pending. See [messaging API](docs/MESSAGING_API.md) for client
+The frontend polls for replies and inbox updates. The academic release was deployed
+on November 10, 2026; see [release results](docs/ACADEMIC_RELEASE_STATUS.md).
+See [messaging API](docs/MESSAGING_API.md) for client
 integration and [messaging storage](docs/MESSAGING_STORAGE.md) for migration 003,
-privacy rules, and test setup. Migration 003 must be applied before using these
-endpoints; it has not been applied to the application database yet.
+privacy rules, and test setup. Migration 003 has been applied to the verified
+Supabase application database; do not reapply it or run test setup there.
 
 - Skill matching is exact skill-id only.
 - Sessions require the owner-created `user_sessions` table.

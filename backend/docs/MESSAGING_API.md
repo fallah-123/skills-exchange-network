@@ -1,7 +1,8 @@
 # Private messaging API — step 3
 
 The backend API, frontend interface, and frontend polling loop are implemented.
-Supabase migration and deployment remain pending until release. Read the
+Supabase migration and deployment completed November 10, 2026; see
+[release verification](ACADEMIC_RELEASE_STATUS.md). Read the
 endpoint and error reference in [API.md](API.md#private-messaging) and the schema
 contract in [MESSAGING_STORAGE.md](MESSAGING_STORAGE.md).
 
@@ -118,5 +119,5 @@ creation, retry deduplication, a global sender allowance across sessions and
 conversations, chronological commit ordering, and safe lock-timeout responses.
 The CORS check also verifies that browser clients can read `Retry-After`.
 
-No application `.env` changes, Supabase migration, or deployment were performed.
-Step 3 implements the backend only; the next step is the messaging interface.
+The Step 3 implementation phase did not change `.env`, migrate Supabase or deploy.
+The later coordinated release is recorded in ACADEMIC_RELEASE_STATUS.md.

@@ -126,5 +126,5 @@ the application's `.env` was not changed and Supabase was not migrated.
 - A committed test message and all eight tables survived a full PostgreSQL restart.
 - The temporary PostgreSQL instance was shut down after verification.
 
-Step 2 is complete. Application-database rollout remains pending for the release
-step. The subsequent API implementation is documented in MESSAGING_API.md.
+Step 2 is complete. The later application-database rollout completed on November
+10, 2026; see ACADEMIC_RELEASE_STATUS.md. The API is documented in MESSAGING_API.md.
