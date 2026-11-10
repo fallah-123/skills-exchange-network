@@ -1,6 +1,7 @@
 // Creates the shared PostgreSQL pool from validated application configuration.
 import pg from 'pg';
 import env from '../config/env.js';
+import { databaseSsl } from './ssl.js';
 
 const { Pool } = pg;
 
@@ -11,7 +12,8 @@ const pool = new Pool({
   database: env.database.name,
   user: env.database.user,
   password: env.database.password,
-  ssl: env.nodeEnv === 'production' ? { rejectUnauthorized: true } : false,
+  ssl: databaseSsl({ nodeEnv: env.nodeEnv, ...env.database }),
+  connectionTimeoutMillis: 10000,
 });
 
 export default pool;
