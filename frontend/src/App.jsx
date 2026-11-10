@@ -20,7 +20,7 @@ import NotFoundPage from './pages/NotFoundPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
 
 const pages = [
-  { path: '/', title: 'Skills Exchange Network', element: <LandingPage /> },
+  { path: '/', title: 'Skill Developers Network', element: <LandingPage /> },
   { path: '/register', title: 'Create account', element: <RegisterPage /> },
   { path: '/login', title: 'Log in', element: <LoginPage /> },
   { path: '/dashboard', title: 'Dashboard', element: <DashboardPage /> },

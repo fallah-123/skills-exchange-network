@@ -5,6 +5,7 @@ import { ApiError } from '../api/client.js';
 import Button from '../components/ui/Button.jsx';
 import FormField from '../components/ui/FormField.jsx';
 import Alert from '../components/ui/Alert.jsx';
+import Brand from '../components/ui/Brand.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
@@ -56,8 +57,11 @@ export default function LoginPage() {
   }
   return (
     <div className="page-shell auth-page">
+      <aside className="auth-page__story"><Brand inverse /><p className="eyebrow">LEARN. SHARE. BUILD.</p><h2>Your next skill starts with a connection.</h2><p>A place for developers to exchange knowledge and grow together.</p><div className="auth-page__principles"><span>Share what you know</span><span>Find complementary skills</span><span>Start a conversation</span></div></aside>
       <section className="auth-page__panel">
+        <p className="eyebrow">WELCOME BACK</p>
         <h1>Log in</h1>
+        <p className="auth-page__intro">Pick up where your last conversation left off.</p>
         <Alert>{formError}</Alert>
         <form onSubmit={submit} noValidate>
           <FormField id="email" label="Email" error={errors.email} required>

@@ -89,7 +89,7 @@ export default function DashboardPage() {
   useDocumentTitle('Dashboard');
   return (
     <div className="page-shell dashboard-page">
-      <h1>Dashboard</h1>
+      <div className="page-heading"><p className="eyebrow">YOUR WORKSPACE</p><h1>Dashboard</h1><p>Your skills, connections, and next opportunities. All in one place.</p></div>
       <div className="dashboard-page__grid">
         <Card><Section title="Profile"><ProfileSummary /></Section></Card>
         <Card><Section title="My skills"><SkillsSummary /></Section></Card>

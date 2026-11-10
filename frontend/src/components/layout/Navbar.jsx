@@ -4,6 +4,8 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import Button from '../ui/Button.jsx';
+import Brand from '../ui/Brand.jsx';
+import Icon from '../ui/Icon.jsx';
 import './Navbar.css';
 
 const links = [
@@ -35,26 +37,28 @@ export default function Navbar() {
   return (
     <header className="app-header">
       <div className="app-header__inner">
-        <Link className="app-header__brand" to={home}>
-          <span className="app-header__mark" aria-hidden="true">S</span>
-          <span>Skills Exchange Network</span>
+        <div className={`app-header__top${menuOpen ? ' app-header__top--open' : ''}`}>
+        <Link className="app-header__brand" to={home} aria-label="Skill Developers Network home">
+          <Brand />
         </Link>
         {user ? (
           <>
             <Button variant="secondary" className="app-header__toggle" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen((open) => !open)}>
-              Menu
+              <Icon name="menu" /> Menu
             </Button>
-            <nav id="primary-navigation" className={`app-header__nav${menuOpen ? ' app-header__nav--open' : ''}`} aria-label="Primary navigation">
-              <div className="app-header__links">
-                {links.map(([to, label]) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}>{label}</NavLink>)}
-              </div>
               <div className="app-header__user">
-                <span>{user.displayName}</span>
+                <span className="app-header__avatar" aria-hidden="true">{user.displayName.trim().slice(0, 1).toUpperCase()}</span>
+                <span className="app-header__username">{user.displayName}</span>
                 <Button variant="secondary" onClick={handleLogout}>Log out</Button>
               </div>
-            </nav>
           </>
         ) : null}
+        </div>
+        {user && <nav id="primary-navigation" className={`app-header__nav${menuOpen ? ' app-header__nav--open' : ''}`} aria-label="Primary navigation">
+          <div className="app-header__links">
+            {links.map(([to, label], index) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}><Icon name={['dashboard', 'discover', 'matches', 'requests', 'messages', 'skills', 'profile'][index]} />{label}</NavLink>)}
+          </div>
+        </nav>}
       </div>
     </header>
   );

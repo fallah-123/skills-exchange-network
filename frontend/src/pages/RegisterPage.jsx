@@ -6,6 +6,7 @@ import { ApiError } from '../api/client.js';
 import Button from '../components/ui/Button.jsx';
 import FormField from '../components/ui/FormField.jsx';
 import Alert from '../components/ui/Alert.jsx';
+import Brand from '../components/ui/Brand.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { validateDisplayName, validateEmail, validatePassword } from '../utils/validators.js';
@@ -62,7 +63,9 @@ export default function RegisterPage() {
 
   return (
     <div className="page-shell auth-page">
+      <aside className="auth-page__story"><Brand inverse /><p className="eyebrow">BETTER, TOGETHER</p><h2>Bring your skills.<br />Find your people.</h2><p>Meet developers who can learn from you, and help you learn something new.</p><div className="auth-page__principles"><span>Create your developer profile</span><span>Share your skills and interests</span><span>Connect and collaborate</span></div></aside>
       <section className="auth-page__panel">
+        <p className="eyebrow">JOIN THE NETWORK</p>
         <h1>Create your account</h1>
         <p>Start by adding your developer profile.</p>
         <Alert>{formError}</Alert>
