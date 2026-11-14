@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, loginUser, logoutUser } from '../api/auth.api.js';
 import { setUnauthenticatedHandler } from '../api/client.js';
 import { resetMessagingSession } from '../api/messaging.api.js';
+import { resetNotificationsSession } from '../api/notifications.api.js';
 import { useToast } from './ToastContext.jsx';
 
 const AuthContext = createContext(null);
@@ -12,6 +13,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -29,6 +31,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setUnauthenticatedHandler((error) => {
       resetMessagingSession();
+      resetNotificationsSession();
       setUser(null);
       showToast({ type: 'error', message: 'Please log in to continue.' });
       navigate('/login', { replace: true, state: { sessionExpired: true } });
@@ -39,17 +42,25 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     resetMessagingSession();
-    const result = await loginUser(credentials);
-    setUser(result.data);
-    return result;
+    resetNotificationsSession();
+    setIsTransitioning(true);
+    try {
+      const result = await loginUser(credentials);
+      setUser(result.data);
+      return result;
+    } finally { setIsTransitioning(false); }
   }, []);
   const logout = useCallback(async () => {
     resetMessagingSession();
-    const result = await logoutUser();
-    setUser(null);
-    return result;
+    resetNotificationsSession();
+    setIsTransitioning(true);
+    try {
+      const result = await logoutUser();
+      setUser(null);
+      return result;
+    } finally { setIsTransitioning(false); }
   }, []);
-  const value = useMemo(() => ({ user, isLoading, login, logout, setUser }), [user, isLoading, login, logout]);
+  const value = useMemo(() => ({ user, isLoading, isTransitioning, login, logout, setUser }), [user, isLoading, isTransitioning, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

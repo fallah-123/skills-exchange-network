@@ -19,6 +19,7 @@ export default function RequestsPage() {
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'outgoing' ? 'outgoing' : 'incoming';
   const statusParam = params.get('status') || 'all';
+  const selectedId = params.get('requestId');
   const status = statusParam === 'all' || VALID_STATUSES.includes(statusParam) ? statusParam : 'all';
   const request = useApi((signal) => listRequests(tab, status === 'all' ? undefined : status, signal), [tab, status]);
   const [items, setItems] = useState([]);
@@ -26,6 +27,9 @@ export default function RequestsPage() {
   const { showToast } = useToast();
   useDocumentTitle('Collaboration Requests');
   useEffect(() => setItems(request.data || []), [request.data]);
+  useEffect(() => {
+    if (!request.isLoading && selectedId) document.getElementById(`request-${selectedId}`)?.scrollIntoView({ block: 'center' });
+  }, [request.isLoading, selectedId, items]);
 
   function updateParams(changes) {
     const next = new URLSearchParams(params);
@@ -69,9 +73,12 @@ export default function RequestsPage() {
       {request.isLoading ? <LoadingBlock label={`Loading ${tab} requests`} /> : null}
       {request.error ? <ErrorState message={request.error.message} onRetry={request.reload} /> : null}
       {!request.isLoading && !request.error && items.length === 0 ? <EmptyState title={emptyTitle} /> : null}
+      {!request.isLoading && !request.error && selectedId && !items.some(item => String(item.id) === selectedId) && <p role="status">The selected request is unavailable in this view. Check the direction and status filters.</p>}
       {!request.isLoading && !request.error && items.length ? (
         <div className="requests-page__list">
-          {items.map((item) => <RequestCard key={item.id} request={item} direction={tab} busy={busyId === item.id} onRespond={respond} />)}
+          {items.map((item) => <div key={item.id} id={`request-${item.id}`} className={String(item.id) === selectedId ? 'request-selection' : undefined}>
+            <RequestCard request={item} direction={tab} busy={busyId === item.id} onRespond={respond} />
+          </div>)}
         </div>
       ) : null}
     </div>

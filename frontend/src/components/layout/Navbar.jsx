@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import Button from '../ui/Button.jsx';
 import Brand from '../ui/Brand.jsx';
 import Icon from '../ui/Icon.jsx';
+import NotificationBell from '../domain/NotificationBell.jsx';
 import './Navbar.css';
 
 const links = [
@@ -43,6 +44,7 @@ export default function Navbar() {
         </Link>
         {user ? (
           <>
+            <NotificationBell />
             <Button variant="secondary" className="app-header__toggle" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen((open) => !open)}>
               <Icon name="menu" /> Menu
             </Button>

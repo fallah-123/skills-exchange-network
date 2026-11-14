@@ -244,6 +244,8 @@ test('RLS still hides messages if a client role accidentally receives SELECT per
   try {
     await client.query('BEGIN');
     await client.query('GRANT SELECT ON public.conversations, public.messages TO anon');
+    // Isolate RLS from schema permissions on freshly recreated local schemas.
+    await client.query('GRANT USAGE ON SCHEMA public TO anon');
     await client.query('SET LOCAL ROLE anon');
     assert.equal((await client.query('SELECT * FROM public.conversations')).rowCount, 0);
     assert.equal((await client.query('SELECT * FROM public.messages')).rowCount, 0);

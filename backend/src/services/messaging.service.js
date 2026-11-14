@@ -2,6 +2,7 @@ import AppError from '../utils/AppError.js';
 import { withTransaction } from '../db/transaction.js';
 import { CHAT_SEND_LIMIT, CHAT_SEND_WINDOW_MS } from '../constants.js';
 import * as repository from '../repositories/messaging.repository.js';
+import { recordMessage } from './notifications.service.js';
 
 const conversationMissing = () => new AppError(404, 'CONVERSATION_NOT_FOUND', 'The conversation was not found.');
 
@@ -62,7 +63,8 @@ export async function sendMessage(pool, userId, id, fields) {
   return messagingTransaction(pool, async (client) => {
     // Lock before allocating a message ID: later IDs in this conversation cannot
     // commit before earlier ones, so incremental history reads do not skip sends.
-    if (!await repository.findConversation(client, userId, id, true)) throw conversationMissing();
+    const conversation = await repository.findConversation(client, userId, id, true);
+    if (!conversation) throw conversationMissing();
     const existing = await repository.findRetry(client, id, userId, fields.clientMessageId);
     if (existing) {
       if (existing.body !== fields.body) throw new AppError(409, 'MESSAGE_ID_REUSED', 'This message identifier was already used for different text.');
@@ -76,6 +78,8 @@ export async function sendMessage(pool, userId, id, fields) {
       error.retryAfter = Math.max(1, Math.ceil((oldest.created_at.getTime() + CHAT_SEND_WINDOW_MS - oldest.checked_at.getTime()) / 1000));
       throw error;
     }
-    return { data: await repository.insertMessage(client, id, userId, fields), created: true };
+    const data = await repository.insertMessage(client, id, userId, fields);
+    await recordMessage(client, conversation.counterpart.id, data);
+    return { data, created: true };
   });
 }

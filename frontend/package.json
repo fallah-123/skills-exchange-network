@@ -12,6 +12,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "check:integration": "node scripts/integration-check.mjs",
     "check:messaging": "node scripts/messaging-polling-check.mjs",
+    "check:notifications": "node scripts/notifications-check.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

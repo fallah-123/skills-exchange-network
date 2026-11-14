@@ -3,6 +3,8 @@ import AppError from '../utils/AppError.js';
 import { REQUEST_STATUS } from '../constants.js';
 import * as users from '../repositories/users.repository.js';
 import * as requests from '../repositories/requests.repository.js';
+import { withTransaction } from '../db/transaction.js';
+import { recordRequest } from './notifications.service.js';
 
 /**
  * Creates a request after preventing self-targeting and checking recipient existence.
@@ -15,9 +17,13 @@ import * as requests from '../repositories/requests.repository.js';
  */
 export async function create(pool, senderId, recipientId, message) {
   if (recipientId === senderId) throw new AppError(400, 'SELF_REQUEST', 'You cannot send a request to yourself.');
-  const recipient = await users.findPublicById(pool, recipientId);
-  if (!recipient) throw new AppError(404, 'USER_NOT_FOUND', 'The user was not found.');
-  return requests.create(pool, senderId, recipientId, message);
+  return withTransaction(pool, async client => {
+    const recipient = await users.findPublicById(client, recipientId);
+    if (!recipient) throw new AppError(404, 'USER_NOT_FOUND', 'The user was not found.');
+    const result = await requests.create(client, senderId, recipientId, message);
+    await recordRequest(client, recipientId, senderId, result.id, 'request_received');
+    return result;
+  });
 }
 
 /**
@@ -43,14 +49,19 @@ export async function list(pool, userId, direction, status) {
  * @throws {AppError} When caller visibility, authorization, or state rules fail.
  */
 export async function respond(pool, requestId, userId, status) {
-  const updated = await requests.updatePending(pool, requestId, userId, status);
-  if (updated) return requests.getRequestView(pool, updated, userId);
-  const existing = await requests.findForParticipant(pool, requestId, userId);
-  if (!existing) throw new AppError(404, 'REQUEST_NOT_FOUND', 'The request was not found.');
-  if (existing.sender_id === userId) {
-    throw new AppError(403, 'FORBIDDEN', 'Only the recipient can respond to a request.');
-  }
-  throw new AppError(409, 'INVALID_STATE', 'This request has already been accepted or rejected.');
+  return withTransaction(pool, async client => {
+    const updated = await requests.updatePending(client, requestId, userId, status);
+    if (updated) {
+      await recordRequest(client, updated.sender_id, userId, requestId, status === REQUEST_STATUS.ACCEPTED ? 'request_accepted' : 'request_rejected');
+      return requests.getRequestView(client, updated, userId);
+    }
+    const existing = await requests.findForParticipant(client, requestId, userId);
+    if (!existing) throw new AppError(404, 'REQUEST_NOT_FOUND', 'The request was not found.');
+    if (existing.sender_id === userId) {
+      throw new AppError(403, 'FORBIDDEN', 'Only the recipient can respond to a request.');
+    }
+    throw new AppError(409, 'INVALID_STATE', 'This request has already been accepted or rejected.');
+  });
 }
 
 /**

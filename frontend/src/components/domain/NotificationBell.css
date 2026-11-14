@@ -1,0 +1,38 @@
+.notification-center { position:relative; margin-left:auto; }
+.notification-bell,.notification-icon-button { position:relative; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text); cursor:pointer; }
+.notification-bell:hover,.notification-bell[aria-expanded="true"] { color:var(--color-primary); background:var(--color-primary-soft); border-color:var(--color-primary); }
+.notification-bell__badge { position:absolute; top:-5px; right:-6px; min-width:21px; height:21px; padding:0 4px; display:grid; place-items:center; border-radius:20px; color:white; background:var(--color-primary); font-size:11px; font-weight:700; border:2px solid white; }
+.notification-bell__warning { position:absolute; bottom:3px; right:3px; width:7px; height:7px; background:var(--color-warning); border-radius:50%; }
+.notification-panel { position:absolute; z-index:60; top:calc(100% + 12px); right:0; width:390px; max-width:calc(100vw - 32px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); box-shadow:0 16px 48px rgb(23 37 59 / 16%); overflow:hidden; }
+.notification-panel__header { display:flex; align-items:center; justify-content:space-between; padding:20px 20px 10px; gap:12px; }
+.notification-panel__header h2 { font-size:18px; margin:0; }
+.notification-panel__header p { font-size:12px; color:var(--color-text-muted); margin:4px 0 0; }
+.notification-icon-button { border:0; background:var(--color-subtle); font-size:25px; flex-shrink:0; }
+.notification-panel__actions { display:flex; justify-content:space-between; padding:0 16px 8px; border-bottom:1px solid var(--color-border); }
+.notification-panel__actions button,.notification-item__read,.notification-panel__error button { color:var(--color-primary); background:none; border:0; cursor:pointer; font:inherit; font-size:12px; font-weight:600; min-height:44px; padding:8px 4px; }
+.notification-panel button:disabled { cursor:default; opacity:.5; }
+.notification-panel__scroll { max-height:min(480px, calc(100dvh - 240px)); overflow-y:auto; overscroll-behavior:contain; }
+.notification-list { list-style:none; padding:0; margin:0; }
+.notification-item { display:flex; gap:12px; padding:16px 20px; border-bottom:1px solid #edf0f5; }
+.notification-item--unread { background:var(--color-primary-soft); }
+.notification-item__icon { width:36px; height:36px; border-radius:50%; background:var(--color-offered-soft); color:var(--color-offered); display:grid; place-items:center; flex-shrink:0; }
+.notification-item__content { min-width:0; flex:1; }
+.notification-item__content>a { display:block; min-height:44px; color:var(--color-text); font-size:14px; line-height:1.5; text-decoration:none; overflow-wrap:anywhere; }
+.notification-item--unread .notification-item__content>a { font-weight:600; }
+.notification-item__content>a:hover { text-decoration:underline; }
+.notification-item__meta { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--color-text-muted); margin-top:4px; }
+.notification-item__dot { width:7px; height:7px; border-radius:50%; background:var(--color-primary); }
+.notification-panel__empty { text-align:center; padding:36px 24px; color:var(--color-text-muted); }
+.notification-panel__empty>svg { color:var(--color-offered); margin-bottom:12px; }
+.notification-panel__empty h3 { color:var(--color-text); font-size:16px; margin:0 0 8px; }
+.notification-panel__empty p,.notification-panel__placeholder { font-size:14px; line-height:1.6; }
+.notification-panel__placeholder { padding:24px; text-align:center; }
+.notification-panel__error { padding:12px 20px; background:var(--color-warning-soft); font-size:13px; }
+.notification-panel__error p { margin:0; }
+.notification-panel__more { display:block; width:calc(100% - 32px); min-height:44px; margin:12px 16px; background:white; color:var(--color-primary); border:1px solid var(--color-border); border-radius:8px; cursor:pointer; }
+.notification-panel__footer { padding:12px 20px; background:var(--color-subtle); color:var(--color-text-muted); font-size:11px; border-top:1px solid var(--color-border); }
+@media(max-width:720px) {
+ .notification-center { margin-left:auto; }
+ .notification-center+.app-header__toggle { margin-left:0; }
+ .notification-panel { position:fixed; top:84px; right:16px; width:390px; }
+}
