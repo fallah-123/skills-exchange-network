@@ -1,5 +1,6 @@
 // Small decorative interface icons; accessible names stay on their controls.
 const paths = {
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
   dashboard: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   discover: 'M10.5 3a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15 M16 16l5 5',
   matches: 'M8 3H4v4 M16 21h4v-4 M4 7l5 5-5 5 M20 17l-5-5 5-5 M9 12h6',

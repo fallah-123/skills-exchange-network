@@ -1,6 +1,7 @@
 // Defines the route table and global application providers.
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { NotificationProvider } from './context/NotificationContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import AppLayout from './components/layout/AppLayout.jsx';
 import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
@@ -50,6 +51,7 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
+          <NotificationProvider>
           <Routes>
             {pages.map(({ path, element }) => (
               <Route key={path} path={path} element={<RoutePage path={path} element={element} />} />
@@ -57,6 +59,7 @@ export default function App() {
             <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
           </Routes>
           <ToastContainer />
+          </NotificationProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
