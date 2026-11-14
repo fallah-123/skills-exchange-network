@@ -1,11 +1,13 @@
+import { checkNotificationReadiness } from './notificationReadiness.js';
 const baseTables = ['users', 'developer_profiles', 'skills', 'developer_skills', 'collaboration_requests', 'user_sessions'];
 const baseTriggers = ['users_set_updated_at', 'developer_profiles_set_updated_at', 'collaboration_requests_guard_trg', 'collaboration_requests_set_updated_at'];
 const chatTables = ['conversations', 'messages'];
 const chatTriggers = ['conversations_guard_trg', 'messages_guard_trg'];
 
 // Read-only deployment checks, also run inside the migration transaction before commit.
-export async function checkDatabaseReadiness(db, { messaging = true } = {}) {
+export async function checkDatabaseReadiness(db, { messaging = true, notifications = false } = {}) {
   const errors = [];
+  if (notifications) errors.push(...await checkNotificationReadiness(db));
   const expectedTables = [...baseTables, ...(messaging ? chatTables : [])];
   const tables = await db.query(`SELECT c.relname, c.relrowsecurity FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace

@@ -46,6 +46,8 @@ export default function errorHandler(error, req, res, next) {
 }
 
 function mapDatabaseError(databaseError) {
+  // Server-generated notification data is not a user form validation failure.
+  if (databaseError.constraint?.startsWith('notifications_')) return databaseError;
   if (databaseError.code === '23505') {
     if (databaseError.constraint === 'users_email_key') return new AppError(409, 'EMAIL_TAKEN', 'An account with this email already exists.');
     if (databaseError.constraint === 'developer_skills_pkey') return new AppError(409, 'SKILL_ALREADY_ADDED', 'This skill is already in that list.');
