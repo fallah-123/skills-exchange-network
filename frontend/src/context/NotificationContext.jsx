@@ -3,7 +3,8 @@ import { useAuth } from './AuthContext.jsx';
 import * as api from '../api/notifications.api.js';
 import { createNotificationStore, emptyNotifications } from '../utils/notificationStore.js';
 const NotificationContext = createContext(null);
-const adapters = { list: api.listNotifications, count: api.getUnreadCount, read: api.markNotificationRead, readAll: api.markAllNotificationsRead };
+const adapters = { list: api.listNotifications, count: api.getUnreadCount, read: api.markNotificationRead, readAll: api.markAllNotificationsRead,
+  clear: api.clearNotification, clearRead: api.clearReadNotifications, clearAll: api.clearAllNotifications };
 
 export function NotificationProvider({ children }) {
   const { user, isLoading, isTransitioning } = useAuth();
@@ -24,6 +25,9 @@ export function NotificationProvider({ children }) {
   return <NotificationContext.Provider value={{ ...state,
     setOpen: open => runtime.current?.setOpen(open), refresh: () => runtime.current?.refresh(),
     loadMore: () => runtime.current?.loadMore(), markRead: item => runtime.current?.markRead(item), markAllRead: () => runtime.current?.markAllRead(),
+    clearOne: item => runtime.current?.clearOne(item), clearRead: () => runtime.current?.clearRead(),
+    requestClearAll: () => runtime.current?.requestClearAll(), cancelClearAll: () => runtime.current?.cancelClearAll(),
+    confirmClearAllOpen: state.confirmClearAll, confirmClearAll: () => runtime.current?.confirmClearAll(),
   }}>{children}</NotificationContext.Provider>;
 }
 export function useNotifications() { return useContext(NotificationContext); }

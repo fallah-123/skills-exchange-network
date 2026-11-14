@@ -103,3 +103,77 @@ test('notification descriptions and destinations cover all event types without m
   }
   assert.equal(relativeNotificationTime('2026-01-01T00:00:00Z', Date.parse('2026-01-01T00:00:10Z')), 'Just now');
 });
+
+test('clearing APIs send DELETE with CSRF and displayed version; bulk operations send no recipient', async () => {
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return response(url.endsWith('csrf-token') ? { data: { userId: 1, csrfToken: 'token' } } : { data: { clearedIds: [item.id], clearedCount: 1 }, meta: { userId: 1, unreadCount: 0 } });
+  };
+  await api.clearNotification(1, item); await api.clearReadNotifications(1); await api.clearAllNotifications(1);
+  assert.deepEqual(calls.slice(1).map(c => c.url), [`/api/notifications/${item.id}`, '/api/notifications/read', '/api/notifications']);
+  for (const { options } of calls.slice(1)) { assert.equal(options.method, 'DELETE'); assert.equal(options.headers['X-CSRF-Token'], 'token'); assert.equal(options.credentials, 'include'); }
+  assert.deepEqual(JSON.parse(calls[1].options.body), { lastMessageId: item.lastMessageId });
+  assert.deepEqual(JSON.parse(calls[2].options.body), {}); assert.deepEqual(JSON.parse(calls[3].options.body), {});
+});
+
+test('individual clear removes only confirmed IDs and immediately updates the count', async () => {
+  let removed = false;
+  const { store } = setup({ list: async () => page(removed ? [] : [item], removed ? 0 : 1),
+    clear: async (_, value) => { assert.equal(value.id, item.id); removed = true; return { data: { clearedIds: [item.id] }, meta: { unreadCount: 0 } }; } });
+  store.start(); await flush(); await store.setOpen(true); await store.clearOne(item);
+  assert.deepEqual(store.getState().items, []); assert.equal(store.getState().unreadCount, 0); assert.equal(store.getState().loaded, true); store.stop();
+});
+
+test('clear read retains unread items and does not optimistically erase concurrent activity', async () => {
+  const readItem = { ...item, id: '7', readAt: '2026-01-01' }; let removed = false;
+  const { store } = setup({ list: async () => page(removed ? [item] : [item, readItem]),
+    clearRead: async () => { removed = true; return { data: { clearedIds: ['7'] }, meta: { unreadCount: 1 } }; } });
+  store.start(); await flush(); await store.setOpen(true); await store.clearRead();
+  assert.deepEqual(store.getState().items, [item]); assert.equal(store.getState().unreadCount, 1); store.stop();
+});
+
+test('clear all requires confirmation; cancellation and repeated pending actions do not delete', async () => {
+  const pending = deferred(); let calls = 0, removed = false;
+  const { store } = setup({ list: async () => page(removed ? [] : [item], removed ? 0 : 1),
+    clearAll: async () => { calls++; await pending.promise; removed = true; return { data: { clearedIds: [item.id] }, meta: { unreadCount: 0 } }; } });
+  store.start(); await flush(); await store.setOpen(true);
+  await store.confirmClearAll(); assert.equal(calls, 0);
+  store.requestClearAll(); assert.equal(store.getState().confirmClearAll, true); store.cancelClearAll();
+  await store.confirmClearAll(); assert.equal(calls, 0);
+  store.requestClearAll(); const clearing = store.confirmClearAll(); await flush();
+  assert.equal(store.getState().busy, true); assert.equal(store.getState().confirmClearAll, false);
+  store.requestClearAll(); await store.confirmClearAll(); assert.equal(calls, 1);
+  pending.resolve(); await clearing; assert.equal(store.getState().busy, false); assert.deepEqual(store.getState().items, []); store.stop();
+});
+
+test('a stale polling response cannot restore a cleared notification', async () => {
+  const lateRead = deferred(); let reads = 0, removed = false;
+  const { store } = setup({ list: async () => ++reads === 2 ? lateRead.promise : page(removed ? [] : [item], removed ? 0 : 1),
+    clear: async () => { removed = true; return { data: { clearedIds: [item.id] }, meta: { unreadCount: 0 } }; } });
+  store.start(); await flush(); await store.setOpen(true);
+  const polling = store.refresh(); await flush(); const clearing = store.clearOne(item); await flush();
+  lateRead.resolve(page()); await polling; await clearing;
+  assert.deepEqual(store.getState().items, []); assert.equal(store.getState().unreadCount, 0); store.stop();
+});
+
+test('clearing errors preserve items and stale-version conflicts refresh newer activity', async () => {
+  const newest = { ...item, eventCount: 3, lastMessageId: '9007199254740996' }; let failed = false;
+  const { store } = setup({ list: async () => page([failed ? newest : item]), clear: async () => {
+    failed = true; throw Object.assign(new Error('Review new messages'), { status: 409, code: 'NOTIFICATION_UPDATED' });
+  } });
+  store.start(); await flush(); await store.setOpen(true); await store.clearOne(item);
+  assert.equal(store.getState().actionError.code, 'NOTIFICATION_UPDATED'); assert.deepEqual(store.getState().items, [newest]); assert.equal(store.getState().unreadCount, 1);
+  await store.refresh(); assert.equal(store.getState().actionError, null); store.stop();
+});
+
+test('switching accounts cancels pending clearing and discards its late result and confirmation state', async () => {
+  const pending = deferred(); let signal;
+  const first = setup({ clearAll: async (_, value) => { signal = value; return pending.promise; } });
+  first.store.start(); await flush(); await first.store.setOpen(true); first.store.requestClearAll();
+  const clearing = first.store.confirmClearAll(); await flush(); first.store.stop();
+  assert.equal(signal.aborted, true); const count = first.updates.length;
+  const second = setup(); assert.equal(second.store.getState().confirmClearAll, false); assert.equal(second.store.getState().busy, false);
+  pending.resolve({ data: { clearedIds: [item.id] }, meta: { unreadCount: 0 } }); await clearing;
+  assert.equal(first.updates.length, count); assert.deepEqual(second.store.getState().items, []); second.store.stop();
+});

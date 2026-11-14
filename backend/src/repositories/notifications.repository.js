@@ -66,3 +66,26 @@ export async function acknowledgeAll(db, userId) {
       AND n.last_message_id IS NOT DISTINCT FROM s.last_message_id RETURNING n.id`, [userId]);
   return result.rowCount;
 }
+
+export async function clearOne(db, userId, id, lastMessageId) {
+  const result = await db.query(`DELETE FROM public.notifications
+    WHERE recipient_id = $1 AND id = $2 AND last_message_id IS NOT DISTINCT FROM $3::bigint
+    RETURNING id`, [userId, id, lastMessageId]);
+  if (result.rowCount) return 'cleared';
+  const existing = await db.query('SELECT id FROM public.notifications WHERE recipient_id = $1 AND id = $2', [userId, id]);
+  return existing.rowCount ? 'changed' : 'missing';
+}
+
+export async function clearSnapshot(db, userId, readOnly) {
+  // Capture membership AND message versions at the DELETE statement's snapshot.
+  // Rows arriving later are excluded; groups updated while we wait survive.
+  // Only child notification rows are deleted, never their referenced records.
+  const result = await db.query(`WITH snapshot AS MATERIALIZED (
+      SELECT id, last_message_id FROM public.notifications
+      WHERE recipient_id = $1 AND (NOT $2::boolean OR read_at IS NOT NULL)
+    ) DELETE FROM public.notifications n USING snapshot s
+    WHERE n.id = s.id AND n.recipient_id = $1
+      AND (NOT $2::boolean OR n.read_at IS NOT NULL)
+      AND n.last_message_id IS NOT DISTINCT FROM s.last_message_id RETURNING n.id`, [userId, readOnly]);
+  return result.rows.map(row => row.id);
+}

@@ -64,12 +64,16 @@ try {
   await as('b', () => notifications.markAllNotificationsRead(accounts.b.id));
   // Node has no DOM. Supply a visible/online lifecycle; fetch and timers remain real.
   const environment = { document: Object.assign(new EventTarget(), { visibilityState: 'visible' }), window: new EventTarget(), navigator: { onLine: true } };
-  store = createNotificationStore({ userId: accounts.b.id, environment, onChange() {}, api: {
+  const createStore = () => createNotificationStore({ userId: accounts.b.id, environment, onChange() {}, api: {
     list: (...args) => as('b', () => notifications.listNotifications(...args)),
     count: (...args) => as('b', () => notifications.getUnreadCount(...args)),
     read: (...args) => as('b', () => notifications.markNotificationRead(...args)),
     readAll: (...args) => as('b', () => notifications.markAllNotificationsRead(...args)),
+    clear: (...args) => as('b', () => notifications.clearNotification(...args)),
+    clearRead: (...args) => as('b', () => notifications.clearReadNotifications(...args)),
+    clearAll: (...args) => as('b', () => notifications.clearAllNotifications(...args)),
   } });
+  store = createStore();
   store.start();
   await until(() => store.getState().unreadCount === 0);
   const conversation = (await as('a', () => openConversation(incoming.id, accounts.a.id))).data;
@@ -125,6 +129,31 @@ try {
   assert.equal((await list('b')).data.filter(n => n.type === 'message').length, 2);
   assert.equal((await as('b', () => listMessages(conversation.id))).data[0].id, message.id);
   console.log('PASS recipient privacy, logout, same-session account switching and persisted notification/message history');
+
+  const otherNotifications = (await list('a')).data;
+  await send({ body: 'Unread activity survives clearing read history', clientMessageId: randomUUID() });
+  store = createStore(); store.start(); await store.setOpen(true);
+  await store.clearRead();
+  assert.equal(store.getState().items.length, 1); assert.equal(store.getState().unreadCount, 1);
+  const unread = store.getState().items[0];
+  await assert.rejects(as('c', () => notifications.clearNotification(accounts.c.id, unread)), e => e.status === 404);
+  await store.clearOne(unread);
+  assert.equal(store.getState().items.length, 0); assert.equal(store.getState().unreadCount, 0);
+  await send({ body: 'A new group after clearing', clientMessageId: randomUUID() });
+  await store.refresh(); assert.equal(store.getState().unreadCount, 1);
+  assert.notEqual(store.getState().items[0].id, unread.id);
+  store.requestClearAll(); store.cancelClearAll(); await store.confirmClearAll();
+  assert.equal((await list('b')).data.length, 1);
+  const historyBefore = (await as('b', () => listMessages(conversation.id))).data;
+  store.requestClearAll(); await store.confirmClearAll();
+  assert.deepEqual(store.getState().items, []); assert.equal(store.getState().unreadCount, 0);
+  assert.deepEqual((await as('b', () => listMessages(conversation.id))).data, historyBefore);
+  assert.deepEqual((await list('a')).data, otherNotifications);
+  await as('b', () => logoutUser());
+  await as('b', () => loginUser({ email: accounts.b.email, password }));
+  notifications.resetNotificationsSession();
+  assert.deepEqual((await list('b')).data, []);
+  console.log('PASS individual/read/all clearing, confirmation/cancellation, new groups, recipient isolation and persistent removal without message deletion');
   console.log('Notification integration passed. Only synthetic local records were created.');
 } finally {
   store?.stop();

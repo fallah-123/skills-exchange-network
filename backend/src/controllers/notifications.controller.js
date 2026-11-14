@@ -9,3 +9,14 @@ export async function readAll(req, res) {
   validator.readBody(req.body, true);
   res.json(await service.markAllRead(req.app.locals.pool, req.userId));
 }
+export async function clearOne(req, res) {
+  res.json(await service.clearOne(req.app.locals.pool, req.userId, validator.notificationId(req.params.id), validator.readBody(req.body)));
+}
+export async function clearRead(req, res) {
+  validator.readBody(req.body, true);
+  res.json(await service.clearAll(req.app.locals.pool, req.userId, true));
+}
+export async function clearAll(req, res) {
+  validator.readBody(req.body, true);
+  res.json(await service.clearAll(req.app.locals.pool, req.userId, false));
+}

@@ -10,11 +10,24 @@ export default function NotificationBell() {
   const container = useRef(null);
   const button = useRef(null);
   const closeButton = useRef(null);
+  const actionsMenu = useRef(null);
+  const menuButton = useRef(null);
+  const clearDialog = useRef(null);
   const { open, setOpen, unreadCount, items, loaded, error, actionError, busy } = notifications;
+  useEffect(() => {
+    if (!notifications.confirmClearAllOpen || !open) return;
+    const dialog = clearDialog.current;
+    dialog.showModal();
+    return () => { dialog.close(); menuButton.current?.focus(); };
+  }, [notifications.confirmClearAllOpen, open]);
   useEffect(() => {
     if (!open) return;
     closeButton.current?.focus();
     function key(event) {
+      if (clearDialog.current?.open) return; // Native dialog owns Escape and focus.
+      if (event.key === 'Escape' && actionsMenu.current?.open) {
+        actionsMenu.current.open = false; menuButton.current?.focus(); return;
+      }
       if (event.key === 'Escape') { setOpen(false); button.current?.focus(); }
     }
     function outside(event) { if (!container.current?.contains(event.target)) setOpen(false); }
@@ -39,7 +52,21 @@ export default function NotificationBell() {
       <header className="notification-panel__header"><div><h2>Notifications</h2><p>{unreadCount === null ? 'Your latest activity' : `${unreadCount} unread ${unreadCount === 1 ? 'notification' : 'notifications'}`}</p></div>
         <button ref={closeButton} type="button" className="notification-icon-button" aria-label="Close notifications" onClick={() => { setOpen(false); button.current?.focus(); }}>×</button>
       </header>
-      <div className="notification-panel__actions"><button type="button" disabled={busy || !unreadCount} onClick={notifications.markAllRead}>Mark all as read</button><button type="button" disabled={busy} onClick={notifications.refresh}>Refresh</button></div>
+      <div className="notification-panel__actions">
+        <button type="button" disabled={busy || !unreadCount} onClick={notifications.markAllRead}>Mark all as read</button>
+        <button type="button" disabled={busy} onClick={notifications.refresh}>Refresh</button>
+        <details className="notification-menu" ref={actionsMenu}>
+          <summary ref={menuButton} aria-label="Notification management actions">More <span aria-hidden="true">⋯</span></summary>
+          <div className="notification-menu__options">
+            <button type="button" disabled={busy || !loaded || (!items.some(item => item.readAt) && !notifications.nextCursor)} onClick={() => {
+              actionsMenu.current.open = false; menuButton.current?.focus(); notifications.clearRead();
+            }}>Clear all read</button>
+            <button type="button" disabled={busy || !loaded || (!items.length && !notifications.nextCursor)} onClick={() => {
+              actionsMenu.current.open = false; menuButton.current?.focus(); notifications.requestClearAll();
+            }}>Clear all notifications</button>
+          </div>
+        </details>
+      </div>
       <div className="notification-panel__scroll" aria-busy={busy}>
         {(error || actionError) && <div className="notification-panel__error" role="alert"><p>{(actionError || error).message}</p>
           {error?.code === 'SESSION_CHANGED' ? <button type="button" onClick={() => window.location.reload()}>Reload application</button> : <button type="button" disabled={busy} onClick={notifications.refresh}>Try again</button>}
@@ -52,12 +79,26 @@ export default function NotificationBell() {
             if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { notifications.markRead(item); setOpen(false); }
           }}>{notificationText(item)}</Link>
             <div className="notification-item__meta"><time dateTime={item.lastEventAt} title={new Date(item.lastEventAt).toLocaleString()}>{relativeNotificationTime(item.lastEventAt)}</time>{!item.readAt && <span className="notification-item__dot" aria-label="Unread" />}</div>
-            {!item.readAt && <button type="button" className="notification-item__read" disabled={busy} onClick={() => notifications.markRead(item)}>Mark as read</button>}
+            <div className="notification-item__actions">
+              {!item.readAt && <button type="button" className="notification-item__read" disabled={busy} onClick={() => notifications.markRead(item)}>Mark as read</button>}
+              <button type="button" className="notification-item__clear" disabled={busy} aria-label={`Clear notification: ${notificationText(item)}`} onClick={async () => {
+                await notifications.clearOne(item); closeButton.current?.focus();
+              }}>Clear</button>
+            </div>
           </div>
         </li>)}</ol>}
         {notifications.nextCursor && <button className="notification-panel__more" type="button" disabled={busy} onClick={notifications.loadMore}>{busy ? 'Please wait…' : 'Load more'}</button>}
       </div>
       <footer className="notification-panel__footer">{notifications.status.phase === 'offline' ? 'Offline. Updates resume when you reconnect.' : notifications.status.phase === 'retrying' ? 'Updates delayed. Retrying automatically.' : 'Updates automatically while you’re here.'}</footer>
+      {notifications.confirmClearAllOpen && <dialog ref={clearDialog} className="notification-clear-dialog" aria-labelledby="notification-clear-title" aria-describedby="notification-clear-description"
+        onCancel={event => { event.preventDefault(); notifications.cancelClearAll(); }}>
+        <h2 id="notification-clear-title">Clear all notifications?</h2>
+        <p id="notification-clear-description">This removes your read and unread notification history. Your messages, conversations and collaboration requests will remain untouched. This cannot be undone.</p>
+        <div className="notification-clear-dialog__actions">
+          <button type="button" className="button button--secondary" autoFocus onClick={notifications.cancelClearAll}>Cancel</button>
+          <button type="button" className="button button--primary" disabled={busy} onClick={notifications.confirmClearAll}>Clear all notifications</button>
+        </div>
+      </dialog>}
     </section>}
   </div>;
 }

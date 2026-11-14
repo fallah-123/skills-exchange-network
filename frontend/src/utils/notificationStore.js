@@ -1,7 +1,7 @@
 import { createPollingTask, bindPollingLifecycle } from './polling.js';
 
 export const emptyNotifications = () => ({ items: [], unreadCount: null, loaded: false, open: false,
-  nextCursor: null, error: null, actionError: null, busy: false, status: { phase: 'connecting' } });
+  nextCursor: null, error: null, actionError: null, busy: false, confirmClearAll: false, status: { phase: 'connecting' } });
 
 // A single owner shared by the header and all routes. Kept independent of React
 // so lifecycle, mutation/read races, and account isolation can be tested directly.
@@ -73,12 +73,21 @@ export function createNotificationStore({ userId, api, onChange, environment, cl
     }
   }
 
+  async function clear(operation) {
+    await action(operation, result => {
+      const removed = new Set(result.data.clearedIds);
+      emit({ items: state.items.filter(item => !removed.has(item.id)), unreadCount: result.meta.unreadCount });
+    });
+    // Never blank the whole list optimistically: concurrent new activity may survive.
+    if (!stopped && !terminal && visible()) await poller.refresh();
+  }
+
   return {
     start() { if (!stopped && !unbind) unbind = bindPollingLifecycle(poller, environment); },
     stop() { stopped = true; unbind?.(); poller.stop(); readController?.abort(); actionController?.abort(); },
     getState: () => state,
     async setOpen(open) {
-      emit({ open });
+      emit({ open, ...(!open ? { confirmClearAll: false } : {}) });
       if (open && !terminal && !state.busy) {
         readController?.abort();
         await readFlight?.catch(() => {});
@@ -108,6 +117,15 @@ export function createNotificationStore({ userId, api, onChange, environment, cl
     async markAllRead() {
       await action(signal => api.readAll(userId, signal), result => emit({ unreadCount: result.meta.unreadCount }));
       if (!stopped && !terminal && visible()) await poller.refresh();
+    },
+    clearOne(item) { return clear(signal => api.clear(userId, item, signal)); },
+    clearRead() { return clear(signal => api.clearRead(userId, signal)); },
+    requestClearAll() { if (!stopped && !terminal && !state.busy) emit({ confirmClearAll: true }); },
+    cancelClearAll() { emit({ confirmClearAll: false }); },
+    confirmClearAll() {
+      if (!state.confirmClearAll || stopped || terminal || state.busy) return;
+      emit({ confirmClearAll: false });
+      return clear(signal => api.clearAll(userId, signal));
     },
   };
 }

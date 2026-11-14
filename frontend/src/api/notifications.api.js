@@ -17,7 +17,7 @@ async function read(path, userId, query, signal) {
   sessionCheck(version, userId, result.meta?.userId, signal);
   return result;
 }
-async function post(path, body, userId, signal) {
+async function mutate(method, path, body, userId, signal) {
   const version = sessionVersion;
   for (let attempt = 0; attempt < 2; attempt++) {
     sessionCheck(version, userId, userId, signal);
@@ -27,7 +27,7 @@ async function post(path, body, userId, signal) {
       token = result.data;
     }
     try {
-      const result = await request('POST', path, { body, signal, headers: { 'X-CSRF-Token': token.csrfToken } });
+      const result = await request(method, path, { body, signal, headers: { 'X-CSRF-Token': token.csrfToken } });
       sessionCheck(version, userId, result.meta?.userId, signal);
       return result;
     } catch (error) {
@@ -39,5 +39,8 @@ async function post(path, body, userId, signal) {
 }
 export const listNotifications = (userId, cursor, signal) => read('/api/notifications', userId, { limit: 20, cursor }, signal);
 export const getUnreadCount = (userId, signal) => read('/api/notifications/unread-count', userId, undefined, signal);
-export const markNotificationRead = (userId, item, signal) => post(`/api/notifications/${item.id}/read`, { lastMessageId: item.lastMessageId }, userId, signal);
-export const markAllNotificationsRead = (userId, signal) => post('/api/notifications/read-all', {}, userId, signal);
+export const markNotificationRead = (userId, item, signal) => mutate('POST', `/api/notifications/${item.id}/read`, { lastMessageId: item.lastMessageId }, userId, signal);
+export const markAllNotificationsRead = (userId, signal) => mutate('POST', '/api/notifications/read-all', {}, userId, signal);
+export const clearNotification = (userId, item, signal) => mutate('DELETE', `/api/notifications/${item.id}`, { lastMessageId: item.lastMessageId }, userId, signal);
+export const clearReadNotifications = (userId, signal) => mutate('DELETE', '/api/notifications/read', {}, userId, signal);
+export const clearAllNotifications = (userId, signal) => mutate('DELETE', '/api/notifications', {}, userId, signal);

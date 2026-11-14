@@ -12,4 +12,7 @@ router.get('/unread-count', asyncHandler(controller.count));
 router.get('/', asyncHandler(controller.list));
 router.post('/read-all', requireMessagingCsrf, asyncHandler(controller.readAll));
 router.post('/:id/read', requireMessagingCsrf, asyncHandler(controller.read));
+router.delete('/read', requireMessagingCsrf, asyncHandler(controller.clearRead));
+router.delete('/', requireMessagingCsrf, asyncHandler(controller.clearAll));
+router.delete('/:id', requireMessagingCsrf, asyncHandler(controller.clearOne));
 export default router;

@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { createApi } from '../helpers/api.js';
 import { resetTestDatabase, testPool } from '../helpers/testDb.js';
 import { checkNotificationReadiness } from '../../src/db/notificationReadiness.js';
-import { acknowledgeAll } from '../../src/repositories/notifications.repository.js';
+import { acknowledgeAll, clearSnapshot } from '../../src/repositories/notifications.repository.js';
 let hash, actors;
 before(async () => { hash = await argon2.hash('notifications-test-password'); });
 beforeEach(async () => {
@@ -24,6 +24,7 @@ beforeEach(async () => {
 });
 after(() => testPool.end());
 const post = (actor, path, body = {}) => actor.agent.post(path).set('X-CSRF-Token', actor.token).send(body);
+const remove = (actor, path, body = {}) => actor.agent.delete(path).set('X-CSRF-Token', actor.token).send(body);
 const list = async (actor = actors[1], query = '') => (await actor.agent.get(`/api/notifications${query}`).expect(200)).body;
 async function conversation(a = 1, b = 2) {
   const request = (await testPool.query("INSERT INTO collaboration_requests(sender_id,recipient_id,status) VALUES ($1,$2,'accepted') RETURNING id", [a, b])).rows[0];
@@ -222,4 +223,125 @@ test('concurrent request submissions and responses create one notification per s
   await actors[1].agent.post('/api/auth/logout').send({}).expect(200);
   await actors[1].agent.get('/api/notifications').expect(401);
   await post(actors[1], '/api/notifications/read-all').expect(401);
+});
+
+test('clearing requires authentication, CSRF, valid IDs and recipient ownership', async () => {
+  const anonymous = createApi().agent;
+  for (const path of ['/api/notifications', '/api/notifications/read', '/api/notifications/1']) {
+    await anonymous.delete(path).send({}).expect(401);
+    await actors[0].agent.delete(path).send({}).expect(403);
+  }
+  for (const id of ['0','-1','abc','9223372036854775808']) await remove(actors[0], `/api/notifications/${id}`, { lastMessageId: null }).expect(400);
+  await remove(actors[0], '/api/notifications/1', {}).expect(400);
+  await remove(actors[0], '/api/notifications', { recipientId: 2 }).expect(400);
+  await remove(actors[0], '/api/notifications/read', { recipientId: 2 }).expect(400);
+  await actors[0].agent.delete('/api/notifications').set('X-CSRF-Token', actors[0].token).type('form').send({}).expect(415);
+  const id = await conversation(); await send(id).expect(201); const item = (await list()).data[0];
+  const foreign = (await remove(actors[2], `/api/notifications/${item.id}`, { lastMessageId: item.lastMessageId }).expect(404)).body;
+  const missing = (await remove(actors[2], '/api/notifications/999999', { lastMessageId: item.lastMessageId }).expect(404)).body;
+  assert.deepEqual(foreign, missing);
+  assert.equal((await list()).meta.unreadCount, 1);
+});
+
+test('clearing a group preserves every business record and future sends create a new group', async () => {
+  const id = await conversation(); const uuid = randomUUID();
+  await send(id, 'Keep this message', uuid).expect(201); await send(id, 'Keep this too').expect(201);
+  const item = (await list()).data[0]; assert.equal(item.eventCount, 2);
+  const before = {};
+  for (const table of ['users','developer_profiles','skills','developer_skills','collaboration_requests','conversations','messages']) before[table] = (await testPool.query(`SELECT row_to_json(t) AS row FROM ${table} t ORDER BY row_to_json(t)::text`)).rows;
+  const cleared = (await remove(actors[1], `/api/notifications/${item.id}`, { lastMessageId: item.lastMessageId }).expect(200)).body;
+  assert.deepEqual(cleared.data, { clearedIds: [item.id], clearedCount: 1 }); assert.equal(cleared.meta.unreadCount, 0);
+  for (const table of Object.keys(before)) assert.deepEqual((await testPool.query(`SELECT row_to_json(t) AS row FROM ${table} t ORDER BY row_to_json(t)::text`)).rows, before[table]);
+  await send(id, 'Keep this message', uuid).expect(200); assert.equal((await list()).data.length, 0);
+  await send(id, 'Future activity').expect(201);
+  const next = (await list()).data[0]; assert.notEqual(next.id, item.id); assert.equal(next.eventCount, 1);
+  await post(actors[1], `/api/notifications/${next.id}/read`, { lastMessageId: next.lastMessageId }).expect(200);
+  await remove(actors[1], `/api/notifications/${next.id}`, { lastMessageId: next.lastMessageId }).expect(200);
+  assert.deepEqual((await list()).data, []);
+});
+
+test('clear read preserves unread and other recipients; clear all is scoped and handles empty lists', async () => {
+  const request = (await actors[0].agent.post('/api/requests').send({ recipientId: 2 }).expect(201)).body.data;
+  await actors[1].agent.post(`/api/requests/${request.id}/accept`).send({}).expect(200);
+  const read = (await list()).data[0];
+  await post(actors[1], `/api/notifications/${read.id}/read`, { lastMessageId: null }).expect(200);
+  await actors[2].agent.post('/api/requests').send({ recipientId: 2 }).expect(201);
+  const otherUser = await list(actors[0]);
+  const cleared = (await remove(actors[1], '/api/notifications/read').expect(200)).body;
+  assert.deepEqual(cleared.data.clearedIds, [read.id]); assert.equal(cleared.meta.unreadCount, 1);
+  assert.equal((await list()).data.length, 1);
+  assert.deepEqual(await list(actors[0]), otherUser);
+  const all = (await remove(actors[1], '/api/notifications').expect(200)).body;
+  assert.equal(all.data.clearedCount, 1); assert.equal(all.meta.unreadCount, 0);
+  assert.equal((await remove(actors[1], '/api/notifications').expect(200)).body.data.clearedCount, 0);
+  assert.equal((await remove(actors[1], '/api/notifications/read').expect(200)).body.data.clearedCount, 0);
+  assert.deepEqual(await list(actors[0]), otherUser);
+  assert.equal((await testPool.query('SELECT 1 FROM collaboration_requests')).rowCount, 2);
+});
+
+async function waitForBlockedNotificationQuery(fragment) {
+  for (let i = 0; i < 200; i++) {
+    const result = await testPool.query("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE $1", [`%${fragment}%`]);
+    if (result.rowCount) return;
+    await delay(10);
+  }
+  throw new Error('Expected notification query did not wait on the test lock.');
+}
+
+test('individual clearing rejects stale versions, including an update committed during its lock wait', async () => {
+  const id = await conversation(); await send(id).expect(201); const old = (await list()).data[0];
+  await send(id, 'Newer message').expect(201);
+  await remove(actors[1], `/api/notifications/${old.id}`, { lastMessageId: old.lastMessageId }).expect(409);
+  const current = (await list()).data[0]; const writer = await testPool.connect(); let pending;
+  try {
+    await writer.query('BEGIN');
+    const message = (await writer.query("INSERT INTO messages(conversation_id,sender_id,client_message_id,body) VALUES ($1,1,$2,'Concurrent') RETURNING id", [id, randomUUID()])).rows[0];
+    await writer.query('UPDATE notifications SET last_message_id=$1,event_count=event_count+1 WHERE id=$2', [message.id, old.id]);
+    pending = remove(actors[1], `/api/notifications/${old.id}`, { lastMessageId: current.lastMessageId }).then(r => r);
+    await waitForBlockedNotificationQuery('DELETE FROM public.notifications'); await writer.query('COMMIT');
+    assert.equal((await pending).status, 409); assert.equal((await list()).data[0].eventCount, 3);
+  } finally { await writer.query('ROLLBACK'); writer.release(); await pending?.catch(() => {}); }
+});
+
+test('bulk clearing preserves groups updated and rows inserted after its snapshot', async () => {
+  const id = await conversation(); await send(id).expect(201); const writer = await testPool.connect(); let pending;
+  try {
+    await writer.query('BEGIN');
+    const message = (await writer.query("INSERT INTO messages(conversation_id,sender_id,client_message_id,body) VALUES ($1,1,$2,'Concurrent') RETURNING id", [id, randomUUID()])).rows[0];
+    await writer.query('UPDATE notifications SET last_message_id=$1,event_count=2 WHERE recipient_id=2', [message.id]);
+    pending = clearSnapshot(testPool, 2, false);
+    await waitForBlockedNotificationQuery('DELETE FROM public.notifications');
+    const request = (await writer.query('INSERT INTO collaboration_requests(sender_id,recipient_id) VALUES (3,2) RETURNING id')).rows[0];
+    await writer.query("INSERT INTO notifications(recipient_id,actor_id,type,collaboration_request_id) VALUES (2,3,'request_received',$1)", [request.id]);
+    await writer.query('COMMIT'); assert.deepEqual(await pending, []);
+    assert.equal((await list()).meta.unreadCount, 2);
+  } finally { await writer.query('ROLLBACK'); writer.release(); await pending?.catch(() => {}); }
+});
+
+test('clear read does not include a notification acknowledged after its snapshot', async () => {
+  const id = await conversation(); await send(id).expect(201); const old = (await list()).data[0];
+  await post(actors[1], '/api/notifications/read-all').expect(200);
+  await send(id, 'Still unread when clearing starts').expect(201); const next = (await list()).data[0];
+  const writer = await testPool.connect(); let pending;
+  try {
+    await writer.query('BEGIN'); await writer.query('SELECT id FROM notifications WHERE id=$1 FOR UPDATE', [old.id]);
+    pending = clearSnapshot(testPool, 2, true);
+    await waitForBlockedNotificationQuery('DELETE FROM public.notifications');
+    await writer.query('UPDATE notifications SET read_at=clock_timestamp() WHERE id=$1', [next.id]);
+    await writer.query('COMMIT'); assert.deepEqual(await pending, [old.id]);
+    assert.deepEqual((await list()).data.map(n => n.id), [next.id]);
+  } finally { await writer.query('ROLLBACK'); writer.release(); await pending?.catch(() => {}); }
+});
+
+test('a message waiting on group deletion creates a fresh unread group after commit', async () => {
+  const id = await conversation(); await send(id).expect(201); const old = (await list()).data[0];
+  const writer = await testPool.connect(); let pending;
+  try {
+    await writer.query('BEGIN'); await writer.query('DELETE FROM notifications WHERE id=$1', [old.id]);
+    pending = send(id, 'Sent while clearing').then(r => r);
+    await waitForBlockedNotificationQuery('INSERT INTO public.notifications');
+    await writer.query('COMMIT'); assert.equal((await pending).status, 201);
+    const next = (await list()).data[0]; assert.notEqual(next.id, old.id); assert.equal(next.eventCount, 1);
+    assert.equal((await testPool.query('SELECT 1 FROM messages')).rowCount, 2);
+  } finally { await writer.query('ROLLBACK'); writer.release(); await pending?.catch(() => {}); }
 });

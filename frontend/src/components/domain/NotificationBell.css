@@ -31,6 +31,22 @@
 .notification-panel__error p { margin:0; }
 .notification-panel__more { display:block; width:calc(100% - 32px); min-height:44px; margin:12px 16px; background:white; color:var(--color-primary); border:1px solid var(--color-border); border-radius:8px; cursor:pointer; }
 .notification-panel__footer { padding:12px 20px; background:var(--color-subtle); color:var(--color-text-muted); font-size:11px; border-top:1px solid var(--color-border); }
+.notification-item__actions { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.notification-item__clear { min-height:44px; padding:8px 4px; border:0; background:none; color:var(--color-text-muted); cursor:pointer; font:inherit; font-size:12px; }
+.notification-item__clear:hover { color:var(--color-text); text-decoration:underline; }
+.notification-menu { position:relative; }
+.notification-menu summary { display:flex; align-items:center; gap:8px; min-height:44px; padding:8px 4px; color:var(--color-primary); font-size:12px; font-weight:600; cursor:pointer; list-style:none; border-radius:4px; }
+.notification-menu summary::-webkit-details-marker { display:none; }
+.notification-menu summary span { font-size:20px; line-height:1; }
+.notification-menu__options { position:absolute; right:0; top:100%; z-index:2; width:210px; max-width:calc(100vw - 64px); padding:6px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgb(23 37 59 / 14%); }
+.notification-menu__options button { display:block; text-align:left; width:100%; padding:10px 12px; border-radius:4px; }
+.notification-menu__options button:hover:not(:disabled) { background:var(--color-primary-soft); }
+.notification-clear-dialog { width:440px; max-width:calc(100vw - 32px); max-height:calc(100dvh - 32px); margin:auto; padding:24px; overflow-y:auto; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); color:var(--color-text); box-shadow:0 20px 64px rgb(23 37 59 / 24%); }
+.notification-clear-dialog::backdrop { background:rgb(23 37 59 / 48%); }
+.notification-clear-dialog h2 { margin:0 0 12px; font-size:20px; }
+.notification-clear-dialog p { color:var(--color-text-muted); font-size:14px; line-height:1.6; }
+.notification-clear-dialog__actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:12px; margin-top:24px; }
+.notification-clear-dialog__actions button { min-height:44px; }
 @media(max-width:720px) {
  .notification-center { margin-left:auto; }
  .notification-center+.app-header__toggle { margin-left:0; }

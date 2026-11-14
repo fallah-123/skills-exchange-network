@@ -33,4 +33,19 @@ export function markAllRead(pool, userId) {
   return mutation(pool, userId, async client => ({ markedCount: await repository.acknowledgeAll(client, userId) }));
 }
 
+export function clearOne(pool, userId, id, lastMessageId) {
+  return mutation(pool, userId, async client => {
+    const result = await repository.clearOne(client, userId, id, lastMessageId);
+    if (result === 'missing') throw new AppError(404, 'NOTIFICATION_NOT_FOUND', 'The notification was not found.');
+    if (result === 'changed') throw new AppError(409, 'NOTIFICATION_UPDATED', 'New messages arrived. Review the updated notification before clearing it.');
+    return { clearedIds: [id], clearedCount: 1 };
+  });
+}
+export function clearAll(pool, userId, readOnly) {
+  return mutation(pool, userId, async client => {
+    const clearedIds = await repository.clearSnapshot(client, userId, readOnly);
+    return { clearedIds, clearedCount: clearedIds.length };
+  });
+}
+
 export { recordMessage, recordRequest } from '../repositories/notifications.repository.js';

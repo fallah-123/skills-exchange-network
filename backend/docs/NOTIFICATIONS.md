@@ -41,6 +41,35 @@ and excluded from this feature's commit. No dependencies were added.
   outside focus/click closes the panel. Opening alone does not mark anything read.
 - Notification links acknowledge the displayed version and navigate to an
   authorized conversation or the selected incoming/outgoing request.
+- Each item has an accessible Clear action. A compact More disclosure contains
+  Clear all read and Clear all notifications, preserving Mark all as read/Refresh.
+  Clear all requires a native modal confirmation with Cancel focused by default,
+  Escape cancellation, and focus restoration. It explains that messages and
+  collaboration records remain untouched.
+
+## Notification clearing
+
+Clearing uses recipient-scoped DELETEs against the existing table. Migration 004
+is unchanged; no additional migration, archive table or dependency is needed.
+
+Individual clearing submits the displayed `lastMessageId` (null for requests).
+If the message group changed, the API returns 409 and the UI refreshes the newer
+activity instead of deleting it. Missing and other-recipient IDs both return 404.
+
+Bulk clearing captures membership and message versions at the DELETE statement's
+snapshot, not when the user first opens the confirmation dialog. Clear all read
+captures only rows already read at that point. Rows inserted afterwards, message
+groups changed during a lock wait, and rows acknowledged after a clear-read
+snapshot survive. A future message starts a new group after the old group is
+cleared; retrying an already-saved message does not recreate its notification.
+
+All clearing routes require authentication, JSON and the existing CSRF token.
+Deletion and count retrieval share a transaction with bounded lock/statement
+timeouts. Only notification rows are removed. Responses identify the rows actually
+deleted, so the UI immediately removes those IDs and updates the count, then
+refreshes. Pending reads are cancelled and awaited before mutation; late results
+cannot restore deleted rows. Pending actions are disabled and isolated per account.
+There is no automatic network retry of deletion and no undo/archive facility.
 
 Implementation detail beyond the basic table design: a PostgreSQL guard trigger
 also verifies that actor, recipient and referenced message/request belong
@@ -75,14 +104,17 @@ All paths below are under `/api/notifications` and require a session.
 | `GET /csrf-token` | Existing session-bound CSRF protocol |
 | `POST /:id/read` | JSON `{ "lastMessageId": "<displayed ID>" }`; null for requests |
 | `POST /read-all` | JSON `{}`; acknowledge the statement's snapshot |
+| `DELETE /:id` | JSON `{ "lastMessageId": "<displayed ID>" }`; clear one owned row; null for requests |
+| `DELETE /read` | JSON `{}`; clear the owner's read-notification snapshot |
+| `DELETE /` | JSON `{}`; clear the owner's full notification snapshot |
 
 There is no public notification creation endpoint. IDs stay strings when they may
 exceed JavaScript's safe integer range.
 
 ## Executed local verification
 
-- Full backend suite: **94 passed, 0 failed**.
-- Full frontend suite: **42 passed, 0 failed**.
+- Full backend suite after adding clearing: **101 passed, 0 failed**.
+- Full frontend suite after adding clearing: **49 passed, 0 failed**.
 - Frontend production build: **passed**.
 - Database readiness including notifications: **passed**.
 - Guarded 004 rehearsal: read-only preflight, incorrect-target refusal,
@@ -96,26 +128,34 @@ exceed JavaScript's safe integer range.
 - Notification integration: **passed**, covering all four events, actual 30-second
   polling, opening without acknowledgement, message retry grouping, stale reads,
   individual/bulk synchronization, navigation targets, recipient privacy, account
-  switching and persistent history. This is an API/store integration check; Node
+  switching and persistent history. Clearing checks also cover individual/read/all
+  removal, confirmation/cancellation, retained messages, recipient isolation and
+  removal persisting across login. This is an API/store integration check; Node
   supplies a visible/online lifecycle rather than rendering a browser DOM.
 - Backend concurrency tests cover simultaneous sends, competing request decisions,
   reads blocked by a concurrent writer, and bulk snapshot races. Failure injection
   verifies transactional rollback. Database tests exercise constraints, RLS and
   role revocations.
+- Clearing race tests cover a delete waiting on a new message, bulk snapshots
+  while new events arrive, clear-read racing with acknowledgement, and a send
+  waiting on group deletion. Frontend tests cover confirmation gating, cancellation,
+  duplicate clicks, error recovery, stale polls and account switching mid-clear.
 
 One existing messaging RLS test required a fixture correction: it temporarily
 grants schema USAGE inside its rolled-back test transaction, so it tests RLS rather
 than failing first on schema access. No production permissions were changed.
 
-Windows browser automation ended because it could not confidently determine the
-current Chrome URL. No rendered-browser checks are claimed. Manual visual,
-keyboard, touch, screen-reader, and actual click-through verification remain.
+The user completed manual review of the original notification implementation.
+For this clearing enhancement, browser automation reported that the browser access
+host was unavailable. No rendered-browser checks of the new controls are claimed.
+Manual visual, keyboard, touch, screen-reader, and dialog verification remain.
 
 ## Current local preview
 
-Open **http://127.0.0.1:5175/** while the preview processes remain running.
+Open **http://127.0.0.1:5176/** while the updated preview processes remain running.
+Use this URL for clearing review; the earlier preview used an older backend.
 
-- API: `127.0.0.1:4101`.
+- API: `127.0.0.1:4103`.
 - PostgreSQL: `127.0.0.1:55439`.
 - Preview database: `sen_notifications_preview_20261115_test`.
 - Automated suite database: `sen_notifications_20261115_test` (separate from preview).
@@ -141,6 +181,15 @@ automation account passwords are not published or stored in this guide.
    Refresh/polling currently returns the list to the latest page; Load more can
    retrieve older notifications again.
 7. Hide the tab or go offline, then return/reconnect. Confirm polling resumes.
+8. Clear an individual unread group and confirm its badge disappears while its
+   conversation/messages remain. Send another message and confirm a fresh group.
+9. Mix read/unread items, choose More → Clear all read, and confirm only read items
+   disappear. Try again when no read items remain; there should be no failure.
+10. Choose More → Clear all notifications. Cancel, then try Escape; both must keep
+    history. Confirm a subsequent attempt and check the empty state/count. Refresh
+    and log in again to confirm removal persists. Check another account is unchanged.
+11. At mobile widths and with keyboard only, check More, individual Clear, native
+    dialog focus containment, initial Cancel focus, Escape and focus restoration.
 
 Notifications start with new activity after 004; there is no historical backfill.
 Notification acknowledgement is independent of message history or read receipts.
@@ -156,7 +205,7 @@ if restarted differently).
 ```powershell
 cd backend
 $env:NODE_ENV='test'
-$env:PORT='4101'
+$env:PORT='4103'
 $env:DB_HOST='127.0.0.1'
 $env:DB_PORT='55439'
 $env:DB_NAME='postgres'
@@ -166,7 +215,7 @@ $env:DB_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host 'Local Postg
 $env:SESSION_SECRET=node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('hex'))"
 $env:DB_SSL_CA_FILE=''
 npm.cmd run check:db
-node --input-type=module -e "const {createApp}=await import('./src/app.js'); const {default:pool}=await import('./src/db/pool.js'); createApp(pool).listen(4101,'127.0.0.1');"
+node --input-type=module -e "const {createApp}=await import('./src/app.js'); const {default:pool}=await import('./src/db/pool.js'); createApp(pool).listen(4103,'127.0.0.1');"
 ```
 
 The password is entered privately into the local process environment, never into
@@ -179,16 +228,16 @@ In another terminal:
 
 ```powershell
 cd frontend
-$env:API_PROXY_TARGET='http://127.0.0.1:4101'
+$env:API_PROXY_TARGET='http://127.0.0.1:4103'
 $env:VITE_API_URL=''
-npm.cmd run dev -- --host 127.0.0.1 --port 5175 --strictPort
+npm.cmd run dev -- --host 127.0.0.1 --port 5176 --strictPort
 ```
 
 In a third frontend terminal, with the isolated preview running:
 
 ```powershell
 $env:INTEGRATION_TARGET_IS_TEST_DB='yes'
-$env:INTEGRATION_ORIGIN='http://127.0.0.1:5175'
+$env:INTEGRATION_ORIGIN='http://127.0.0.1:5176'
 npm.cmd test
 npm.cmd run build
 npm.cmd run check:integration
