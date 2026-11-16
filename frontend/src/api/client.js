@@ -3,6 +3,16 @@ const NETWORK_ERROR_MESSAGE =
   'Cannot reach the server. Check your connection and try again.';
 let unauthenticatedHandler = () => {};
 
+// Proxies may return an HTML/text 429 rather than the application's JSON envelope.
+// Retry-After allows either a number of seconds or an HTTP date.
+function retryAfterSeconds(value) {
+  if (!value?.trim()) return 0;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds));
+  const deadline = Date.parse(value);
+  return Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
+}
+
 export class ApiError extends Error {
   constructor({
     status = 0,
@@ -73,13 +83,18 @@ export async function request(method, path, { body, query, signal, headers } = {
   }
   if (!response.ok) {
     const apiError = payload?.error;
+    const retryAfter = retryAfterSeconds(response.headers.get('Retry-After'));
+    const rateLimited = response.status === 429;
+    const fallbackMessage = rateLimited
+      ? `Too many requests. ${retryAfter > 0 ? `Please wait ${retryAfter} seconds before trying again.` : 'Please wait a little before trying again.'}`
+      : 'The server returned an unexpected response.';
     const error = new ApiError({
       status: response.status,
-      code: apiError?.code || 'INVALID_RESPONSE',
+      code: apiError?.code || (rateLimited ? 'RATE_LIMITED' : 'INVALID_RESPONSE'),
       message:
-        apiError?.message || 'The server returned an unexpected response.',
+        apiError?.message || fallbackMessage,
       details: apiError?.details || {},
-      retryAfter: Math.max(0, Number(response.headers.get('Retry-After')) || 0),
+      retryAfter,
     });
     if (
       response.status === 401 &&
