@@ -12,7 +12,10 @@ import requestsRouter from './requests.routes.js';
 import messagingRouter from './messaging.routes.js';
 import notificationsRouter from './notifications.routes.js';
 
+import { verificationRouter } from './verification.routes.js';
 const router = Router();
+router.use('/verifications',verificationRouter());
+router.use('/admin/verifications',verificationRouter(true));
 
 router.get('/health', asyncHandler(async (req, res) => {
   try {

@@ -1,3 +1,4 @@
+import { badges } from './verification.repository.js';
 // Executes catalogue and developer-skill SQL with safe Skill response mapping.
 
 function mapSkill(row) {
@@ -32,7 +33,10 @@ export async function listForUser(db, userId, skillType) {
      ORDER BY lower(s.name), s.id`,
     [userId, skillType]
   );
-  return result.rows.map(mapSkill);
+  const verified=skillType==='offered'?await badges(db,[userId]):new Set();
+  const attempts=skillType==='offered'?(await db.query('SELECT DISTINCT ON (skill_id) skill_id,id,status FROM public.skill_verification_requests WHERE user_id=$1 ORDER BY skill_id,created_at DESC,id DESC',[userId])).rows:[];
+  const history=new Map(attempts.map(row=>[row.skill_id,{verificationStatus:row.status,verificationId:row.id}]));
+  return result.rows.map(row=>({...mapSkill(row),...history.get(row.id),...(verified.has(userId+':'+row.id)?{evidenceReviewed:true}:{})}));
 }
 
 /**

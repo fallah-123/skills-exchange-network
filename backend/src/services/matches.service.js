@@ -1,3 +1,4 @@
+import { badges } from '../repositories/verification.repository.js';
 // Coordinates candidate loading, pure scoring, and connection enrichment.
 import { DEFAULT_MATCH_LIMIT } from '../constants.js';
 import * as matches from '../repositories/matches.repository.js';
@@ -16,11 +17,14 @@ export async function getMatches(pool, currentUserId, limit = DEFAULT_MATCH_LIMI
   if (!currentUser) {
     return { data: [], hasOfferedSkills: false, hasWantedSkills: false };
   }
+  const verified=await badges(pool,[currentUserId,...candidates.map(c=>c.id)]);
+  for(const person of [currentUser,...candidates]) for(const skill of person.offered) if(verified.has(person.id+':'+skill.id)) skill.evidenceReviewed=true;
   const ranked = rankMatches(currentUser, candidates).slice(0, limit);
   const connections = await matches.loadConnections(pool, currentUserId, ranked.map(({ developer }) => developer.id));
   return {
     data: ranked.map((match) => ({
       ...match,
+      youOfferTheyWant: match.youOfferTheyWant.map(skill=>({...skill,...(verified.has(currentUserId+':'+skill.id)?{evidenceReviewed:true}:{})})),
       connection: connections.get(match.developer.id) ?? null
     })),
     hasOfferedSkills: currentUser.offered.length > 0,
