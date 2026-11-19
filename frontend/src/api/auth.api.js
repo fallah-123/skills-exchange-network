@@ -8,4 +8,4 @@ export const loginUser = (credentials) => request('POST', '/api/auth/login', { b
 /** Ends the current server-side session. */
 export const logoutUser = () => request('POST', '/api/auth/logout');
 /** Returns the current session user. */
-export const getCurrentUser = () => request('GET', '/api/auth/me');
+export const getCurrentUser = (options) => request('GET', '/api/auth/me', options);

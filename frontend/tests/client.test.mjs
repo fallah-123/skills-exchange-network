@@ -35,7 +35,7 @@ test('HTTP-date Retry-After is respected by callers, including polling', async (
 });
 
 test('missing, malformed and expired retry headers do not produce invalid wait durations', async () => {
-  for (const value of ['', 'invalid', '-10', 'Mon, 01 Jan 2024 00:00:00 GMT']) {
+  for (const value of ['', 'invalid', '-10', '1.5', '0x10', 'Infinity', '9999999999999999999999999', 'Mon, 01 Jan 2024 00:00:00 GMT']) {
     globalThis.fetch = async () => new Response('', { status: 429, headers: { 'Retry-After': value } });
     await assert.rejects(request('GET', '/api/auth/me'), {
       retryAfter: 0, message: 'Too many requests. Please wait a little before trying again.',

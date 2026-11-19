@@ -11,6 +11,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { validateEmail, validatePassword } from '../utils/validators.js';
 import './AuthPage.css';
+import useRetryCooldown from '../hooks/useRetryCooldown.js';
 
 /** Renders the controlled login form and restores an intended protected route. */
 export default function LoginPage() {
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [formError, setFormError] = useState(location.state?.registered ? 'Your account is ready. Please log in.' : '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitting = useRef(false);
+  const { remaining, start: startCooldown, blocked } = useRetryCooldown();
   useDocumentTitle('Log in');
   function update(event) {
     setValues((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -31,7 +33,7 @@ export default function LoginPage() {
   }
   async function submit(event) {
     event.preventDefault();
-    if (submitting.current) return;
+    if (submitting.current || blocked()) return;
     const nextErrors = {};
     const emailError = validateEmail(values.email);
     const passwordError = validatePassword(values.password);
@@ -48,6 +50,7 @@ export default function LoginPage() {
       const from = location.state?.from;
       navigate(from?.pathname ? `${from.pathname}${from.search || ''}${from.hash || ''}` : '/dashboard', { replace: true });
     } catch (error) {
+      if (error.status === 429) startCooldown(error.retryAfter);
       setFormError(error instanceof ApiError && error.code === 'INVALID_CREDENTIALS' ? 'Invalid email or password.' : error.message);
       if (error.code === 'VALIDATION_ERROR') setErrors((current) => ({ ...current, ...error.details }));
     } finally {
@@ -70,7 +73,8 @@ export default function LoginPage() {
           <FormField id="password" label="Password" error={errors.password} required>
             {(props) => <input {...props} name="password" type="password" autoComplete="current-password" value={values.password} onChange={update} />}
           </FormField>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Logging in…' : 'Log in'}</Button>
+          {remaining > 0 && <p id="login-retry-delay">Please wait {remaining} seconds before trying again.</p>}
+          <Button type="submit" disabled={isSubmitting || remaining > 0} aria-describedby={remaining > 0 ? 'login-retry-delay' : undefined}>{isSubmitting ? 'Logging in…' : 'Log in'}</Button>
         </form>
         <p className="auth-page__footer">New to the network? <Link to="/register">Create an account</Link></p>
       </section>

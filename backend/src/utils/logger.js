@@ -10,6 +10,11 @@ export function info(message) {
   console.info(JSON.stringify({ level: 'info', message, timestamp: new Date().toISOString() }));
 }
 
+/** Writes the fixed, privacy-safe record produced by authDiagnostics middleware. */
+export function authenticationDiagnostic(record) {
+  console.info(JSON.stringify({ level: 'info', ...record }));
+}
+
 /**
  * Logs an error object for server-side diagnosis without returning it to clients.
  * @param {Error} loggedError Error to record.
