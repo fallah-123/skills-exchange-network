@@ -1,12 +1,35 @@
 import test,{afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {validateSubmission,badgeVisible,canReview} from '../src/utils/verification.js';
+import {validateSubmission,badgeVisible,canReview,contributionCharacterCount} from '../src/utils/verification.js';
 import {notificationText,notificationPath} from '../src/utils/notifications.js';
 import {verificationRead,verificationWrite,resetVerificationSession} from '../src/api/verification.api.js';
 const fetch=globalThis.fetch;
 afterEach(()=>{globalThis.fetch=fetch;resetVerificationSession();});
 const fields={skillId:1,contribution:'I built the components and data layer in this project. The linked tests demonstrate the behavior I implemented.',evidence:[{url:'https://github.com/demo/project',description:'Inspect components and tests.'}]};
 const response=(payload,status=200)=>new Response(JSON.stringify(payload),{status});
+test('contribution counter starts at zero and follows typing, pasted text and deletion',()=>{
+ const changes=[['',0],['I',1],['I built',7],['I built this\nusing React.',25],['I built',7],['',0]];
+ for(const [value,expected] of changes) assert.equal(contributionCharacterCount(value),expected);
+});
+test('contribution counter uses the same whitespace and Unicode rules as validation',()=>{
+ assert.equal(contributionCharacterCount('   \n'),0);
+ assert.equal(contributionCharacterCount('  A😀\nB  '),4);
+ const contribution=' '+ '😀'.repeat(50)+' ';
+ assert.equal(contributionCharacterCount(contribution),50);
+ assert.deepEqual(validateSubmission({...fields,contribution}),{});
+});
+test('contribution boundaries still block short and oversized submissions without changing other fields',()=>{
+ for(const count of [0,49,50,1500,1501]) {
+  const input={...fields,contribution:'a'.repeat(count)};
+  assert.equal(contributionCharacterCount(input.contribution),count);
+  const errors=validateSubmission(input);
+  assert.equal(Boolean(errors.contribution),count<50||count>1500);
+  if(count>=50&&count<=1500) assert.deepEqual(errors,{});
+  assert.deepEqual(input.evidence,fields.evidence);
+  assert.equal(input.skillId,fields.skillId);
+ }
+ assert.ok(validateSubmission({...fields,contribution:' '.repeat(50)}).contribution);
+});
 test('evidence form validates contribution, public URLs, descriptions and duplicates',()=>{
  assert.deepEqual(validateSubmission(fields),{});
  for(const url of ['http://github.com/a','https://127.0.0.1','https://[::1]/','https://user:password@github.com','https://2130706433','https://host.internal','javascript:alert(1)'])

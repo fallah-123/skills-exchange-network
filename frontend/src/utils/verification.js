@@ -4,10 +4,14 @@ export const REVIEW_CRITERIA=[
  ['contribution','Personal contribution is identifiable'],['substantial','The work demonstrates meaningful technical use'],
  ['credible','Authorship claims are reasonably supported'],
 ];
+// Match contribution validation: count Unicode code points after trimming outer whitespace.
+export function contributionCharacterCount(value) {
+ return [...value.trim()].length;
+}
 export function validateSubmission(fields) {
  const errors={};
  if(!Number.isInteger(fields.skillId)||fields.skillId<=0) errors.skillId='Choose an offered skill.';
- if(typeof fields.contribution!=='string'||[...fields.contribution.trim()].length<50||[...fields.contribution.trim()].length>1500)
+ if(typeof fields.contribution!=='string'||contributionCharacterCount(fields.contribution)<50||contributionCharacterCount(fields.contribution)>1500)
    errors.contribution='Explain your contribution in 50–1500 characters.';
  const evidence=Array.isArray(fields.evidence)?fields.evidence:[];
  if(evidence.length<1||evidence.length>3) errors.evidence='Provide one to three links.';

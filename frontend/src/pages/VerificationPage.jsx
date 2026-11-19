@@ -3,7 +3,7 @@ import {Link,useLocation,useNavigate,useParams,useSearchParams} from 'react-rout
 import {useAuth} from '../context/AuthContext.jsx';
 import {getMySkills} from '../api/skills.api.js';
 import {verificationRead,verificationWrite} from '../api/verification.api.js';
-import {BADGE_EXPLANATION,REVIEW_CRITERIA,validateSubmission,canReview} from '../utils/verification.js';
+import {BADGE_EXPLANATION,REVIEW_CRITERIA,validateSubmission,canReview,contributionCharacterCount} from '../utils/verification.js';
 import useApi from '../hooks/useApi.js';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import Button from '../components/ui/Button.jsx';
@@ -64,7 +64,8 @@ function SubmissionForm({user}){
  <form className="verification-form" onSubmit={submit} noValidate><Card><label htmlFor="verification-skill">Offered skill</label><select id="verification-skill" value={fields.skillId} disabled={busy} onChange={e=>setFields(f=>({...f,skillId:Number(e.target.value)}))}><option value={0}>Select a skill</option>{skills.data.offered.map(s=><option key={s.id} value={s.id} disabled={s.evidenceReviewed||s.verificationStatus==='pending'}>{s.name}{s.evidenceReviewed?' — Evidence Reviewed':''}</option>)}</select>
  {errors.skillId&&<p role="alert">{errors.skillId}</p>}
  <label htmlFor="verification-contribution">Your personal contribution</label><p id="contribution-help">Explain what the project does, what you implemented, how it demonstrates this skill, and where the reviewer should look. Use 50–1500 characters.</p>
- <textarea id="verification-contribution" aria-describedby="contribution-help" rows={7} value={fields.contribution} disabled={busy} onChange={e=>setFields(f=>({...f,contribution:e.target.value}))}/>
+ <textarea id="verification-contribution" aria-describedby="contribution-help contribution-count" rows={7} value={fields.contribution} disabled={busy} onChange={e=>setFields(f=>({...f,contribution:e.target.value}))}/>
+ <p id="contribution-count" className="verification-character-count" role="status" aria-live="polite" aria-atomic="true">{contributionCharacterCount(fields.contribution)} / 1500 characters</p>
  {errors.contribution&&<p role="alert">{errors.contribution}</p>}</Card>
  {fields.evidence.map((item,index)=><Card key={index}><fieldset disabled={busy}><legend>Evidence {index+1}</legend>
  <label htmlFor={'evidence-url-'+index}>Public HTTPS link</label><input id={'evidence-url-'+index} type="url" value={item.url} onChange={e=>evidence(index,'url',e.target.value)} placeholder="https://github.com/owner/project"/>
