@@ -1,3 +1,4 @@
+import {resetVerificationSession} from '../api/verification.api.js';
 // Initializes auth state from the server session and exposes login/logout actions.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setUnauthenticatedHandler((error) => {
+      resetVerificationSession();
       resetMessagingSession();
       resetNotificationsSession();
       setUser(null);
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
   }, [navigate, showToast]);
 
   const login = useCallback(async (credentials) => {
+    resetVerificationSession();
     resetMessagingSession();
     resetNotificationsSession();
     setIsTransitioning(true);
@@ -51,6 +54,7 @@ export function AuthProvider({ children }) {
     } finally { setIsTransitioning(false); }
   }, []);
   const logout = useCallback(async () => {
+    resetVerificationSession();
     resetMessagingSession();
     resetNotificationsSession();
     setIsTransitioning(true);

@@ -1,3 +1,4 @@
+import {Link} from 'react-router-dom';
 // Shows current skills and the catalogue choices for one assignment category.
 import { useMemo, useState } from 'react';
 import SkillChip from './SkillChip.jsx';
@@ -19,7 +20,7 @@ export default function SkillList({ type, skills, catalogue, busyKey, onAdd, onR
       {skills.length ? (
         <div className="skill-list__chips">
           {skills.map((skill) => (
-            <SkillChip key={skill.id} skill={skill} category={colorType} action={onRemove} disabled={busyKey === `${type}-${skill.id}`} actionLabel={`Remove ${skill.name} from skills you ${type === 'offered' ? 'offer' : 'want'}`} />
+            <span className="skill-verification-action" key={skill.id}><SkillChip skill={skill} category={colorType} action={onRemove} disabled={busyKey === `${type}-${skill.id}`} actionLabel={`Remove ${skill.name} from skills you ${type === 'offered' ? 'offer' : 'want'}`} />{type==='offered'&&<>{skill.verificationStatus&&skill.verificationStatus!=='approved'&&<span className="verification-status">{skill.verificationStatus==='pending'?'Pending review':skill.verificationStatus}</span>}<Link to={['pending','approved'].includes(skill.verificationStatus)?'/verifications/'+skill.verificationId:'/verifications/new?skillId='+skill.id}>{['pending','approved'].includes(skill.verificationStatus)?'View review':'Request verification'}</Link></>}</span>
           ))}
         </div>
       ) : <p className="skill-list__empty">No skills added to this list yet.</p>}

@@ -72,9 +72,9 @@ export default function NotificationBell() {
           {error?.code === 'SESSION_CHANGED' ? <button type="button" onClick={() => window.location.reload()}>Reload application</button> : <button type="button" disabled={busy} onClick={notifications.refresh}>Try again</button>}
         </div>}
         {!loaded && !error && <p className="notification-panel__placeholder" role="status">Loading notifications…</p>}
-        {loaded && !items.length && <div className="notification-panel__empty"><Icon name="bell" size={30} /><h3>You’re all caught up</h3><p>Messages and collaboration updates will appear here.</p></div>}
+        {loaded && !items.length && <div className="notification-panel__empty"><Icon name="bell" size={30} /><h3>You’re all caught up</h3><p>Messages, collaboration and verification updates will appear here.</p></div>}
         {items.length > 0 && <ol className="notification-list">{items.map(item => <li key={item.id} className={item.readAt ? 'notification-item' : 'notification-item notification-item--unread'}>
-          <span className="notification-item__icon" aria-hidden="true"><Icon name={item.type === 'message' ? 'messages' : 'requests'} /></span>
+          <span className="notification-item__icon" aria-hidden="true"><Icon name={item.type === 'message' ? 'messages' : item.type.startsWith('verification_') ? 'skills' : 'requests'} /></span>
           <div className="notification-item__content"><Link to={notificationPath(item)} onClick={event => {
             if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { notifications.markRead(item); setOpen(false); }
           }}>{notificationText(item)}</Link>

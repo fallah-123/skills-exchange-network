@@ -1,3 +1,5 @@
+import VerificationPage from './pages/VerificationPage.jsx';
+import AdminRoute from './components/layout/AdminRoute.jsx';
 // Defines the route table and global application providers.
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -21,6 +23,7 @@ import NotFoundPage from './pages/NotFoundPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
 
 const pages = [
+  ...['/verifications','/verifications/new','/verifications/:id','/admin/verifications','/admin/verifications/:id'].map(path=>({path,element:<VerificationPage/>})),
   { path: '/', title: 'Skill Developers Network', element: <LandingPage /> },
   { path: '/register', title: 'Create account', element: <RegisterPage /> },
   { path: '/login', title: 'Log in', element: <LoginPage /> },
@@ -37,7 +40,7 @@ const pages = [
 
 function RoutePage({ path, element }) {
   const page = element;
-  const access = path === '/register' || path === '/login'
+  const access = path.startsWith('/admin/') ? <AdminRoute>{page}</AdminRoute> : path === '/register' || path === '/login'
     ? <PublicOnlyRoute>{page}</PublicOnlyRoute>
     : path !== '/' && path !== '*'
       ? <ProtectedRoute>{page}</ProtectedRoute>

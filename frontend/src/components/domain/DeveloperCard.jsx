@@ -1,3 +1,4 @@
+import VerificationBadge from './VerificationBadge.jsx';
 // Summarizes a developer for searchable and recommended result grids.
 import { Link } from 'react-router-dom';
 import Badge from '../ui/Badge.jsx';
@@ -23,7 +24,7 @@ export default function DeveloperCard({ developer }) {
       <h3>Skills they offer</h3>
       {skills.length ? (
         <div className="developer-card__skills">
-          {skills.slice(0, DEVELOPER_CARD_SKILL_LIMIT).map((skill) => <Badge key={skill.id} variant="offered">{skill.name}</Badge>)}
+          {skills.slice(0, DEVELOPER_CARD_SKILL_LIMIT).map((skill) => <Badge key={skill.id} variant="offered">{skill.name} <VerificationBadge skill={skill}/></Badge>)}
           {skills.length > DEVELOPER_CARD_SKILL_LIMIT ? <span className="developer-card__more">+{skills.length - DEVELOPER_CARD_SKILL_LIMIT} more</span> : null}
         </div>
       ) : <p className="developer-card__muted">No offered skills listed.</p>}
