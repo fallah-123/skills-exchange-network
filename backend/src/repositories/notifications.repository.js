@@ -1,3 +1,4 @@
+const visibility = include => include ? 'TRUE' : 'verification_event_id IS NULL';
 // Only trusted business services create notifications; reads/writes always scope ownership.
 export async function recordMessage(db, recipientId, message) {
   await db.query(`INSERT INTO public.notifications
@@ -20,17 +21,17 @@ function map(row) {
   return {
     id: row.id, type: row.type, actor: { id: row.actor_id, displayName: row.display_name },
     requestId: row.collaboration_request_id, conversationId: row.conversation_id,
-    lastMessageId: row.last_message_id, eventCount: row.event_count,
+    verificationId: row.verification_request_id ?? null, lastMessageId: row.last_message_id, eventCount: row.event_count,
     createdAt: row.created_at.toISOString(), lastEventAt: row.last_event_at.toISOString(),
     readAt: row.read_at?.toISOString() ?? null,
   };
 }
 
-export async function list(db, userId, { limit, cursor, unread }) {
-  const result = await db.query(`SELECT n.*, u.display_name,
+export async function list(db, userId, { limit, cursor, unread }, include = false) {
+  const result = await db.query(`SELECT n.*, u.display_name, e.request_id AS verification_request_id,
       to_char(n.last_event_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time
-    FROM public.notifications n JOIN public.users u ON u.id = n.actor_id
-    WHERE n.recipient_id = $1 AND (NOT $2::boolean OR n.read_at IS NULL)
+    FROM public.notifications n JOIN public.users u ON u.id = n.actor_id LEFT JOIN public.skill_verification_events e ON e.id=n.verification_event_id
+    WHERE n.recipient_id = $1 AND (${visibility(include)}) AND (NOT $2::boolean OR n.read_at IS NULL)
       AND ($3::timestamptz IS NULL OR (n.last_event_at, n.id) < ($3::timestamptz, $4::bigint))
     ORDER BY n.last_event_at DESC, n.id DESC LIMIT $5`,
   [userId, unread, cursor?.at ?? null, cursor?.id ?? null, limit + 1]);
@@ -42,47 +43,47 @@ export async function list(db, userId, { limit, cursor, unread }) {
   return { data: rows.map(map), meta: { hasMore, nextCursor, limit } };
 }
 
-export async function countUnread(db, userId) {
-  return (await db.query('SELECT count(*)::integer AS count FROM public.notifications WHERE recipient_id = $1 AND read_at IS NULL', [userId])).rows[0].count;
+export async function countUnread(db, userId, include = false) {
+  return (await db.query(`SELECT count(*)::integer AS count FROM public.notifications WHERE recipient_id = $1 AND read_at IS NULL AND (${visibility(include)})`, [userId])).rows[0].count;
 }
 
-export async function acknowledge(db, userId, id, lastMessageId) {
+export async function acknowledge(db, userId, id, lastMessageId, include = false) {
   // PostgreSQL rechecks this predicate after a concurrent updater commits.
   const result = await db.query(`UPDATE public.notifications SET read_at = COALESCE(read_at, clock_timestamp())
-    WHERE recipient_id = $1 AND id = $2 AND (read_at IS NOT NULL OR last_message_id IS NOT DISTINCT FROM $3::bigint)
+    WHERE recipient_id = $1 AND id = $2 AND (${visibility(include)}) AND (read_at IS NOT NULL OR last_message_id IS NOT DISTINCT FROM $3::bigint)
     RETURNING id`, [userId, id, lastMessageId]);
   if (result.rowCount) return 'read';
-  const existing = await db.query('SELECT id FROM public.notifications WHERE recipient_id = $1 AND id = $2', [userId, id]);
+  const existing = await db.query(`SELECT id FROM public.notifications WHERE recipient_id = $1 AND id = $2 AND (${visibility(include)})`, [userId, id]);
   return existing.rowCount ? 'changed' : 'missing';
 }
 
-export async function acknowledgeAll(db, userId) {
+export async function acknowledgeAll(db, userId, include = false) {
   // MATERIALIZED captures versions at the statement snapshot. Concurrent new rows
   // are absent; updated groups fail the version predicate after any lock wait.
   const result = await db.query(`WITH snapshot AS MATERIALIZED (
-      SELECT id, last_message_id FROM public.notifications WHERE recipient_id = $1 AND read_at IS NULL
+      SELECT id, last_message_id FROM public.notifications WHERE recipient_id = $1 AND read_at IS NULL AND (${visibility(include)})
     ) UPDATE public.notifications n SET read_at = clock_timestamp() FROM snapshot s
     WHERE n.id = s.id AND n.recipient_id = $1 AND n.read_at IS NULL
       AND n.last_message_id IS NOT DISTINCT FROM s.last_message_id RETURNING n.id`, [userId]);
   return result.rowCount;
 }
 
-export async function clearOne(db, userId, id, lastMessageId) {
+export async function clearOne(db, userId, id, lastMessageId, include = false) {
   const result = await db.query(`DELETE FROM public.notifications
-    WHERE recipient_id = $1 AND id = $2 AND last_message_id IS NOT DISTINCT FROM $3::bigint
+    WHERE recipient_id = $1 AND id = $2 AND (${visibility(include)}) AND last_message_id IS NOT DISTINCT FROM $3::bigint
     RETURNING id`, [userId, id, lastMessageId]);
   if (result.rowCount) return 'cleared';
-  const existing = await db.query('SELECT id FROM public.notifications WHERE recipient_id = $1 AND id = $2', [userId, id]);
+  const existing = await db.query(`SELECT id FROM public.notifications WHERE recipient_id = $1 AND id = $2 AND (${visibility(include)})`, [userId, id]);
   return existing.rowCount ? 'changed' : 'missing';
 }
 
-export async function clearSnapshot(db, userId, readOnly) {
+export async function clearSnapshot(db, userId, readOnly, include = false) {
   // Capture membership AND message versions at the DELETE statement's snapshot.
   // Rows arriving later are excluded; groups updated while we wait survive.
   // Only child notification rows are deleted, never their referenced records.
   const result = await db.query(`WITH snapshot AS MATERIALIZED (
       SELECT id, last_message_id FROM public.notifications
-      WHERE recipient_id = $1 AND (NOT $2::boolean OR read_at IS NOT NULL)
+      WHERE recipient_id = $1 AND (${visibility(include)}) AND (NOT $2::boolean OR read_at IS NOT NULL)
     ) DELETE FROM public.notifications n USING snapshot s
     WHERE n.id = s.id AND n.recipient_id = $1
       AND (NOT $2::boolean OR n.read_at IS NOT NULL)

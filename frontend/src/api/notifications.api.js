@@ -13,7 +13,7 @@ function sessionCheck(version, userId, responseUserId, signal) {
 }
 async function read(path, userId, query, signal) {
   const version = sessionVersion;
-  const result = await request('GET', path, { query, signal });
+  const result = await request('GET', path, { query, signal, headers: { 'X-Notification-Version': '2' } });
   sessionCheck(version, userId, result.meta?.userId, signal);
   return result;
 }
@@ -27,7 +27,7 @@ async function mutate(method, path, body, userId, signal) {
       token = result.data;
     }
     try {
-      const result = await request(method, path, { body, signal, headers: { 'X-CSRF-Token': token.csrfToken } });
+      const result = await request(method, path, { body, signal, headers: { 'X-CSRF-Token': token.csrfToken, 'X-Notification-Version': '2' } });
       sessionCheck(version, userId, result.meta?.userId, signal);
       return result;
     } catch (error) {

@@ -36,7 +36,7 @@ export async function login(pool, { email, password }) {
   if (!user || !validPassword) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
-  return { id: user.id, displayName: user.display_name, email: user.email };
+  return { id: user.id, displayName: user.display_name, email: user.email, role: user.role };
 }
 
 /**

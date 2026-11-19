@@ -33,7 +33,7 @@ export function createApp(pool, { nodeEnv = env.nodeEnv } = {}) {
       origin: 'https://frontend-eta-fawn-j8xf3k2cfw.vercel.app',
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Notification-Version'],
       exposedHeaders: ['Retry-After'],
     }),
   );

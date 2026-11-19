@@ -2,7 +2,7 @@
 
 function mapUser(row) {
   if (!row) return null;
-  return { id: row.id, displayName: row.display_name, email: row.email };
+  return { id: row.id, displayName: row.display_name, email: row.email, role: row.role };
 }
 
 /**
@@ -14,7 +14,7 @@ function mapUser(row) {
  */
 export async function findByEmail(db, email) {
   const result = await db.query(
-    'SELECT id, display_name, email, password_hash FROM users WHERE email = $1',
+    'SELECT id, display_name, email, password_hash, role FROM users WHERE email = $1',
     [email.trim().toLowerCase()]
   );
   return result.rows[0] ?? null;
@@ -29,7 +29,7 @@ export async function findByEmail(db, email) {
  */
 export async function findPublicById(db, id) {
   const result = await db.query(
-    'SELECT id, display_name, email FROM users WHERE id = $1',
+    'SELECT id, display_name, email, role FROM users WHERE id = $1',
     [id]
   );
   return mapUser(result.rows[0]);
@@ -46,7 +46,7 @@ export async function insertUser(db, { displayName, email, passwordHash }) {
   const result = await db.query(
     `INSERT INTO users (display_name, email, password_hash)
      VALUES ($1, $2, $3)
-     RETURNING id, display_name, email`,
+     RETURNING id, display_name, email, role`,
     [displayName, email, passwordHash]
   );
   return mapUser(result.rows[0]);

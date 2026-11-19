@@ -18,7 +18,10 @@
     "db:test:setup": "node scripts/setup-test-db.js",
     "db:test:seed-skills": "node scripts/seed-test-skills.js",
     "test": "node --import ./tests/setup/loadTestEnv.js --test --test-concurrency=1",
-    "test:unit": "node --test tests/unit/*.test.js"
+    "test:unit": "node --test tests/unit/*.test.js",
+    "db:migrate:verification": "node scripts/migrate-verification.js",
+    "admin:provision": "node scripts/provision-admin.js",
+    "check:migration:verification": "node scripts/check-verification-migration.js"
   },
   "dependencies": {
     "argon2": "^0.41.1",

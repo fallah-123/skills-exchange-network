@@ -1,3 +1,4 @@
+import { badges } from './verification.repository.js';
 // Retrieves public developer profiles and skill assignments without exposing email.
 
 function mapSkill(row) {
@@ -42,9 +43,10 @@ export async function listDevelopers(db, currentUserId, { search, page, limit })
      ORDER BY lower(s.name), s.id`,
     [developers.map(({ id }) => id)]
   );
+  const verified=await badges(db,developers.map(d=>d.id));
   const byUser = new Map(developers.map((developer) => [developer.id, developer]));
   for (const row of skillsResult.rows) {
-    byUser.get(row.user_id)[row.skill_type === 'offered' ? 'offeredSkills' : 'wantedSkills'].push(mapSkill(row));
+    byUser.get(row.user_id)[row.skill_type === 'offered' ? 'offeredSkills' : 'wantedSkills'].push({...mapSkill(row),...(row.skill_type==='offered' && verified.has(row.user_id+':'+row.id)?{evidenceReviewed:true}:{})});
   }
   return { developers, total: countResult.rows[0].total };
 }
@@ -75,8 +77,9 @@ export async function findDeveloper(db, userId) {
      ORDER BY lower(s.name), s.id`,
     [userId]
   );
+  const verified=await badges(db,[userId]);
   for (const row of skillsResult.rows) {
-    developer[row.skill_type === 'offered' ? 'offeredSkills' : 'wantedSkills'].push(mapSkill(row));
+    developer[row.skill_type === 'offered' ? 'offeredSkills' : 'wantedSkills'].push({...mapSkill(row),...(row.skill_type==='offered' && verified.has(userId+':'+row.id)?{evidenceReviewed:true}:{})});
   }
   return developer;
 }

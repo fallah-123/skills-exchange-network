@@ -16,6 +16,7 @@ const links = [
   ['/requests', 'Requests'],
   ['/messages', 'Messages'],
   ['/skills', 'My Skills'],
+  ['/verifications', 'Verifications'],
   ['/profile', 'Profile']
 ];
 
@@ -58,7 +59,8 @@ export default function Navbar() {
         </div>
         {user && <nav id="primary-navigation" className={`app-header__nav${menuOpen ? ' app-header__nav--open' : ''}`} aria-label="Primary navigation">
           <div className="app-header__links">
-            {links.map(([to, label], index) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}><Icon name={['dashboard', 'discover', 'matches', 'requests', 'messages', 'skills', 'profile'][index]} />{label}</NavLink>)}
+            {links.map(([to, label], index) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}><Icon name={['dashboard', 'discover', 'matches', 'requests', 'messages', 'skills', 'skills', 'profile'][index]} />{label}</NavLink>)}
+            {user.role==='admin'&&<NavLink to="/admin/verifications" onClick={()=>setMenuOpen(false)}>Review dashboard</NavLink>}
           </div>
         </nav>}
       </div>

@@ -14,7 +14,7 @@ test('registers normalized account with empty profile and never returns password
     displayName: 'Example User', email: ' EXAMPLE@EXAMPLE.COM ', password: 'secure-password'
   });
   assert.equal(response.status, 201);
-  assert.deepEqual(response.body.data, { id: 1, displayName: 'Example User', email: 'example@example.com' });
+  assert.deepEqual(response.body.data, { id: 1, displayName: 'Example User', email: 'example@example.com', role: 'developer' });
   assert.equal(JSON.stringify(response.body).includes('password_hash'), false);
   const profile = await agent.post('/api/auth/login').send({ email: 'example@example.com', password: 'secure-password' });
   assert.equal(profile.status, 200);
