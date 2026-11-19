@@ -7,9 +7,14 @@ let unauthenticatedHandler = () => {};
 // Retry-After allows either a number of seconds or an HTTP date.
 function retryAfterSeconds(value) {
   if (!value?.trim()) return 0;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds));
-  const deadline = Date.parse(value);
+  const text = value.trim();
+  if (/^\d+$/.test(text)) {
+    const seconds = Number(text);
+    return Number.isSafeInteger(seconds) && seconds <= (8640000000000000 - Date.now()) / 1000 ? seconds : 0;
+  }
+  // Reject permissive Date.parse inputs such as "1.5", "-10" or "0x10".
+  if (!/^(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?),?\s/i.test(text)) return 0;
+  const deadline = Date.parse(text);
   return Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
 }
 

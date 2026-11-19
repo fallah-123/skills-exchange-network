@@ -9,6 +9,7 @@ import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 import { sessionCookieOptions, requireProductionHttps, upgradeSessionCookie } from './middleware/sessionCookies.js';
 import { createSessionStore } from './db/sessionStore.js';
+import authDiagnostics from './middleware/authDiagnostics.js';
 
 /**
  * Creates the API application using the supplied database pool.
@@ -21,6 +22,8 @@ export function createApp(pool, { nodeEnv = env.nodeEnv } = {}) {
   const app = express();
   app.set('env', nodeEnv);
   app.locals.sessionCookieOptions = sessionCookieOptions(nodeEnv);
+  // Observe auth requests before HTTPS, parsing and session middleware can reject them.
+  app.use(authDiagnostics());
 
   if (nodeEnv === 'production') {
     app.set('trust proxy', 1);
@@ -34,7 +37,7 @@ export function createApp(pool, { nodeEnv = env.nodeEnv } = {}) {
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Notification-Version'],
-      exposedHeaders: ['Retry-After'],
+      exposedHeaders: ['Retry-After', 'X-SDN-Auth-Request-Id'],
     }),
   );
 
